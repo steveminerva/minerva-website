@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us — Minerva Luxury Motors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+<script>document.documentElement.classList.add('vip-checking');</script>
+<style id="vip-guard">
+  html.vip-checking body[data-vip-restrict="full"] main{visibility:hidden;}
+  html.vip-checking .team-grid,
+  html.vip-checking [data-i18n="about.teamHead"]{visibility:hidden;}
+</style>
+</head>
+<body class="inner" data-vip-restrict="team">
+
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <nav class="menu-overlay" id="menu" aria-hidden="true" aria-label="Main menu">
+    <div class="menu-ghost" aria-hidden="true">MINERVA</div>
+    <div class="menu-inner">
+      <div class="menu-main">
+        <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
+        <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">03</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">04</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">05</span>News</a>
+      </div>
+      <div class="menu-foot">
+        <div class="menu-foot-left">
+          <a class="menu-login" href="login.html">Login</a>
+          <form class="subscribe" id="subscribeForm" autocomplete="off">
+            <label class="subscribe-lbl" for="subEmail">Subscribe for the announcement</label>
+            <div class="subscribe-row">
+              <input id="subEmail" type="email" placeholder="Email address" required>
+              <button type="submit" aria-label="Subscribe">Subscribe</button>
+            </div>
+            <p class="subscribe-done" id="subscribeDone" hidden>Thank you — you're on the list.</p>
+          </form>
+        </div>
+        <div class="menu-lang" id="langRow" role="group" aria-label="Language">
+          <button class="lang active" data-lang="en">English</button>
+          <button class="lang" data-lang="nl">Nederlands</button>
+          <button class="lang" data-lang="fr">Français</button>
+          <button class="lang" data-lang="de">Deutsch</button>
+          <button class="lang" data-lang="it">Italiano</button>
+          <button class="lang" data-lang="es">Español</button>
+          <button class="lang cjk" data-lang="zh">中文</button>
+          <button class="lang cjk" data-lang="ja">日本語</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="about-wrap" data-screen-label="About">
+
+    <p class="page-eyebrow">About Us</p>
+    <h1 class="about-title">Minerva &amp; Morand Motors</h1>
+    <p class="about-sub" data-i18n="about.sub">A joint venture of excellence</p>
+
+    <div class="about-intro">
+      <p data-i18n="about.intro1">Minerva Motors &amp; Cie — the historic Belgian marque founded in Antwerp in 1897 — returns in partnership with Morand, the Swiss Formula&nbsp;1 and Le Mans engineering team based in Cousset. Together they unite Belgian craft and heritage with contemporary Formula&nbsp;1 engineering.</p>
+      <p data-i18n-html="about.intro2">The project unfolds as a sequence of three motor cars. The <strong>Aegis Racing</strong>, a circuit-only V12 hypercar that establishes the marque's engineering authority; the <strong>Aegis GT</strong>, the first road-homologated Minerva; and the <strong>Sovereign</strong> — the world's first hydrogen-hydride V12 luxury SUV, hand-assembled in Antwerp.</p>
+      <p data-i18n-html="about.intro3">Across chassis, energy management, hydrogen and design, Minerva is engineered by specialists who operate at the highest level of their disciplines — a venture conceived, from the first line, as a pursuit of excellence. <span class="about-motto">Sapientia et Ars.</span></p>
+    </div>
+
+    <!-- TEAM (restricted) — public shell only. The real team section is NOT in
+         this static HTML; it lives in Supabase (public.protected_content, key
+         'team') behind RLS and is injected here by assets/vip.js only for an
+         authed session that has access. Anonymous / lapsed visitors see nothing
+         here (the existing silent team-gate also applies to this empty shell). -->
+    <div data-protected="team"></div>
+
+    <!-- PARTNERS -->
+    <p class="about-sectionhead" data-i18n="about.partnersHead">The Partners</p>
+    <div class="partner-grid">
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.granCraft">Design — Kortrijk &amp; Turin</p>
+        <h2 class="partner-name"><a href="https://granstudio.com" target="_blank" rel="noopener">Granstudio</a></h2>
+        <p class="partner-desc" data-i18n="pt.granDesc">The design house of Lowie Vermeersch — former Pininfarina Design Director — author of the form of every Minerva, from the Aegis to the Sovereign.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft">Engineering — LMP1 &amp; LMP2 · 24 Hours of Le Mans</p>
+        <h2 class="partner-name">Morand Cars</h2>
+        <p class="partner-desc">The Swiss endurance team competing in the World (WEC) and European (ELMS) championships, and a Le Mans engineering team. Morand engineers the chassis architecture and active suspension across the Aegis and Sovereign, and assembles the Aegis in Switzerland — Swiss Made.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.italCraft">Powertrain — V12 OEM</p>
+        <h2 class="partner-name">Italtecnica</h2>
+        <p class="partner-desc" data-i18n="pt.italDesc">The OEM engine house behind the Minerva V12 — the naturally-aspirated V12 NA and the hydrogen V12 H₂ — heir to the Ferrari-derived V12 of the Maserati MC12 and fifteen years of Peugeot Sport motorsport.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.belinusCraft">Energy &amp; Hydrogen</p>
+        <h2 class="partner-name"><a href="https://www.belinus.com" target="_blank" rel="noopener">belinus</a></h2>
+        <p class="partner-desc" data-i18n="pt.belinusDesc">belinus Energy supplies the marque's proprietary HydraCell hydrogen production and graphene supercapacitor technology — powering the Sovereign's V12 H₂ and the Morand active suspension, and delivering true energy sovereignty to its owners.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.fontanaCraft">Haute Joaillerie — Angoulême</p>
+        <h2 class="partner-name">Charles Fontana &amp; Cie</h2>
+        <p class="partner-desc" data-i18n="pt.fontanaDesc">Maître Joaillier crafting each Minerva's analogue fascia clock and precious-metal commission detailing — titanium, platinum and gold, archived and signed for every motor car.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.valCraft">Crystal — Belgian Royal Warrant</p>
+        <h2 class="partner-name"><a href="https://www.val-saint-lambert.com" target="_blank" rel="noopener">Val Saint-Lambert</a></h2>
+        <p class="partner-desc" data-i18n="pt.valDesc">Belgium's Royal Warrant crystal house. Each Sovereign carries a rear-cabin crystal service, hand-engraved with the motor car's individual commission number.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.delvauxCraft">Leather — Brussels, est. 1829</p>
+        <h2 class="partner-name"><a href="https://www.delvaux.com" target="_blank" rel="noopener">Delvaux</a></h2>
+        <p class="partner-desc" data-i18n="pt.delvauxDesc">The world's oldest luxury leather house, founded in Brussels in 1829. Delvaux dresses the Minerva cabin in full-grain leather and composes the bespoke luggage commission for each vehicle.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.evonityCraft">Technology — DC Charging &amp; Manufacturing Automation</p>
+        <h2 class="partner-name"><a href="https://evonity.com/" target="_blank" rel="noopener">Evonity</a></h2>
+        <p class="partner-desc" data-i18n="pt.evonityDesc">Evonity delivers DC charging infrastructure and manufacturing automation engineering through its automotive-manufacturing specialist team.</p>
+      </article>
+
+      <article class="partner-card">
+        <p class="partner-craft" data-i18n="pt.eveatecCraft">Tracking &amp; Traceability Solutions</p>
+        <h2 class="partner-name"><a href="https://www.eveatec.com/" target="_blank" rel="noopener">Eveatec</a></h2>
+        <p class="partner-desc" data-i18n="pt.eveatecDesc">A real-time location and auto-identification specialist — RTLS, RFID and sensing — underpinning Minerva's component traceability and supply-chain visibility from atelier to delivery.</p>
+      </article>
+
+    </div>
+
+  </main>
+
+  <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
+
+  <script src="assets/image-slot.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/minerva.js"></script>
+</body>
+</html>

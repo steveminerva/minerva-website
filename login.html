@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Minerva Luxury Motors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .login-error { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--minerva-red-bright); text-align: center; min-height: 14px; margin-top: 2px; }
+  .login-ok { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--platinum-bright); text-align: center; min-height: 14px; margin-top: 2px; }
+</style>
+</head>
+<body class="inner">
+
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <nav class="menu-overlay" id="menu" aria-hidden="true" aria-label="Main menu">
+    <div class="menu-ghost" aria-hidden="true">MINERVA</div>
+    <div class="menu-inner">
+      <div class="menu-main">
+        <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
+        <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">03</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">04</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">05</span>News</a>
+      </div>
+      <div class="menu-foot">
+        <div class="menu-foot-left">
+          <a class="menu-login" href="login.html">Login</a>
+          <form class="subscribe" id="subscribeForm" autocomplete="off">
+            <label class="subscribe-lbl" for="subEmail">Subscribe for the announcement</label>
+            <div class="subscribe-row">
+              <input id="subEmail" type="email" placeholder="Email address" required>
+              <button type="submit" aria-label="Subscribe">Subscribe</button>
+            </div>
+            <p class="subscribe-done" id="subscribeDone" hidden>Thank you — you're on the list.</p>
+          </form>
+        </div>
+        <div class="menu-lang" id="langRow" role="group" aria-label="Language">
+          <button class="lang active" data-lang="en">English</button>
+          <button class="lang" data-lang="nl">Nederlands</button>
+          <button class="lang" data-lang="fr">Français</button>
+          <button class="lang" data-lang="de">Deutsch</button>
+          <button class="lang" data-lang="it">Italiano</button>
+          <button class="lang" data-lang="es">Español</button>
+          <button class="lang cjk" data-lang="zh">中文</button>
+          <button class="lang cjk" data-lang="ja">日本語</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page" data-screen-label="Login">
+    <h1 class="page-title" style="font-size:clamp(2rem,6.5vw,4.8rem);" data-i18n="login.title">LOGIN</h1>
+    <form class="login-card" id="loginForm" autocomplete="off" onsubmit="return false;">
+      <div class="field">
+        <label for="email" data-i18n="login.email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="pw" data-i18n="login.password">Password</label>
+        <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <p class="login-error" id="loginError" role="alert"></p>
+      <button class="btn" type="submit" id="loginBtn" data-i18n="login.enter">Enter</button>
+    </form>
+  </main>
+
+  <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
+
+  <script src="assets/i18n.js"></script>
+  <script src="assets/minerva.js"></script>
+  <script>
+    (function () {
+      function param(k) { try { return new URLSearchParams(location.search).get(k); } catch (e) { return null; } }
+      function T(key, fb) { try { var v = window.MinervaI18n && window.MinervaI18n.t(key, window.MinervaI18n.lang); return v != null ? v : fb; } catch (e) { return fb; } }
+      // Wait for the engine, then for its first Supabase session check to resolve
+      // (V.ready), so isAdmin()/currentVip() reflect the real session.
+      function ready(fn) {
+        if (window.MinervaVIP) { (window.MinervaVIP.ready ? window.MinervaVIP.ready(fn) : fn()); return; }
+        var t = setInterval(function () { if (window.MinervaVIP) { clearInterval(t); ready(fn); } }, 40);
+      }
+
+      ready(function () {
+        var V = window.MinervaVIP;
+        var form = document.getElementById('loginForm');
+        var emailEl = document.getElementById('email');
+        var pwEl = document.getElementById('pw');
+        var errEl = document.getElementById('loginError');
+        var btn = document.getElementById('loginBtn');
+
+        // The Minerva Sandbox — ring + logo (same overlay as the heritage flow).
+        // Shows for 3s after a successful login, then lands on the home page,
+        // where the top banner reflects the credentials used (super-admin / VIP).
+        function enter() {
+          if (btn) btn.disabled = true;
+          var ov = document.createElement('div');
+          ov.className = 'reg-overlay';
+          ov.setAttribute('role', 'dialog');
+          ov.setAttribute('aria-label', 'Minerva');
+          ov.innerHTML = '<div class="ro-stage"><span class="ro-ring" aria-hidden="true"></span>'
+            + '<img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva"></div>';
+          document.body.appendChild(ov);
+          document.body.classList.add('menu-open');
+          ov.classList.add('show');
+          requestAnimationFrame(function () { ov.classList.add('show'); });
+          setTimeout(function () { location.href = 'index.html'; }, 3000);
+        }
+
+        // Magic-link / invite from the email: supabase-js consumes the token in
+        // the URL automatically (detectSessionInUrl). loginByInvite() resolves the
+        // resulting session and maps the same reasons. Legacy ?invite=<id> links
+        // also fall through here (no static session → handled as a normal login).
+        function handleInviteThenLogin() {
+          var hasAuthToken = /[#&?](access_token|refresh_token|code|token_hash|type)=/.test(location.hash + location.search);
+          var legacyInvite = param('invite');
+          if (!hasAuthToken && !legacyInvite) { afterInvite(); return; }
+          Promise.resolve(V.loginByInvite()).then(function (ir) {
+            if (ir && ir.ok) { enter(); return; }
+            if (ir && ir.reason === 'expired') { errEl.textContent = T('app.login.errInvExpired', 'This invitation has expired — contact access@minervaluxurymotors.com'); }
+            else if (ir && ir.reason === 'cancelled') { errEl.textContent = T('app.login.errInvCancel', 'This access has been withdrawn — contact access@minervaluxurymotors.com'); }
+            else if (hasAuthToken) { errEl.textContent = T('app.login.errInvInvalid', 'This invitation link is no longer valid'); }
+            afterInvite();
+          });
+        }
+
+        function afterInvite() {
+          // Already signed in? Straight to the home page.
+          if (V.isAdmin() || V.currentVip()) { location.href = 'index.html'; return; }
+          form.addEventListener('submit', submit);
+          btn.addEventListener('click', submit);
+          pwEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+        }
+
+        function submit() {
+          errEl.className = 'login-error'; errEl.textContent = '';
+          var email = (emailEl.value || '').trim();
+          var pw = (pwEl.value || '').trim();
+          if (!email || !pw) { errEl.textContent = T('app.login.errEmpty', 'Enter your email and password'); return; }
+          if (btn) btn.disabled = true;
+          // 1) Super-admin — Supabase Auth + profiles.is_admin.
+          Promise.resolve(V.adminLogin(email, pw)).then(function (isAdm) {
+            if (isAdm) { enter(); return; }
+            // 2) VIP guest — Supabase Auth + has_access check.
+            return Promise.resolve(V.authVip(email, pw)).then(function (res) {
+              if (res && res.ok) { enter(); return; }
+              if (btn) btn.disabled = false;
+              if (res && res.reason === 'expired') { errEl.textContent = T('app.login.errExpired', 'Your access has expired — contact access@minervaluxurymotors.com'); return; }
+              if (res && res.reason === 'cancelled') { errEl.textContent = T('app.login.errCancelled', 'Your access has been withdrawn — contact access@minervaluxurymotors.com'); return; }
+              // 3) Customers — not yet enabled / not recognised.
+              errEl.textContent = T('app.login.errInvalid', 'Email or password not recognised — please contact access@minervaluxurymotors.com');
+            });
+          }).catch(function () {
+            if (btn) btn.disabled = false;
+            errEl.textContent = T('app.login.errInvalid', 'Email or password not recognised — please contact access@minervaluxurymotors.com');
+          });
+        }
+
+        handleInviteThenLogin();
+      });
+    })();
+  </script>
+</body>
+</html>

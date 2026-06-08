@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration — Minerva Luxury Motors</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .adm-top {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: clamp(16px,3vw,26px) var(--pad);
+    border-bottom: 1px solid var(--line); background: rgba(5,5,6,0.86);
+    backdrop-filter: blur(8px);
+  }
+  .adm-top[hidden] { display: none; }
+  .adm-brand { display: flex; align-items: baseline; gap: 14px; }
+  .adm-brand .wm { font-weight: 500; font-size: 15px; letter-spacing: 0.42em; text-indent: 0.42em; color: var(--fg); transition: color 0.35s var(--ease); }
+  a.adm-brand-wm:hover, .adm-brand a.wm:hover { color: var(--platinum-bright); }
+  .adm-brand .lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--platinum-deep); }
+  .adm-signout { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mute); background: none; border: 0; cursor: pointer; transition: color 0.35s var(--ease); }
+  .adm-signout:hover { color: var(--platinum-bright); }
+
+  .adm-wrap { max-width: 880px; margin: 0 auto; padding: clamp(120px,16vh,170px) var(--pad) clamp(70px,10vh,120px); }
+  .adm-eyebrow { font-family: var(--mono); font-size: clamp(10px,1vw,12px); letter-spacing: 0.34em; text-transform: uppercase; color: var(--platinum-deep); }
+  .adm-h1 { font-weight: 300; font-size: clamp(2rem,6vw,3.6rem); letter-spacing: 0.06em; line-height: 1.04; margin-top: 14px; }
+  .adm-sub { margin-top: 16px; font-weight: 300; font-size: clamp(0.95rem,1.6vw,1.1rem); line-height: 1.6; color: var(--fg-dim); max-width: 56ch; text-wrap: pretty; }
+
+  /* gate */
+  .adm-gate { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 var(--pad); gap: clamp(20px,3vh,30px); }
+  .adm-gate .adm-h1 { font-size: clamp(2rem,6.5vw,4.8rem); }
+  .adm-gate-card { width: min(92vw,400px); display: flex; flex-direction: column; gap: 16px; margin-top: 10px; text-align: left; }
+
+  /* menu cards */
+  .adm-menu { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px,2.4vw,24px); margin-top: clamp(34px,5vh,52px); }
+  @media (max-width: 620px) { .adm-menu { grid-template-columns: 1fr; } }
+  .adm-card {
+    display: flex; flex-direction: column; gap: 10px; text-align: left;
+    border: 1px solid var(--line); padding: clamp(24px,3vw,36px);
+    cursor: pointer; background: linear-gradient(180deg,#070809,#050506);
+    transition: border-color 0.4s var(--ease), transform 0.5s var(--ease);
+  }
+  .adm-card:hover { border-color: var(--platinum-deep); transform: translateY(-3px); }
+  .adm-card .num { font-family: var(--mono); font-size: 11px; letter-spacing: 0.24em; color: var(--platinum-deep); }
+  .adm-card .title { font-weight: 400; font-size: clamp(1.2rem,2.4vw,1.6rem); color: var(--fg); letter-spacing: 0.01em; }
+  .adm-card .desc { font-weight: 300; font-size: 0.92rem; line-height: 1.55; color: var(--fg-dim); }
+  .adm-card .go { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--platinum); margin-top: 6px; }
+
+  /* forms */
+  .adm-form { width: min(92vw,440px); display: flex; flex-direction: column; gap: 20px; margin-top: clamp(30px,5vh,46px); text-align: left; }
+  .adm-form .field input { color-scheme: dark; }
+  .field-hint { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: none; color: var(--mute); margin-top: 4px; }
+  .adm-err { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--minerva-red-bright); min-height: 13px; }
+  .adm-okmsg { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--platinum-bright); min-height: 13px; }
+
+  .back-admin { display: inline-flex; align-items: center; gap: 10px; margin-top: clamp(34px,5vh,52px); font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mute); transition: color 0.35s var(--ease), gap 0.4s var(--ease); }
+  .back-admin:hover { color: var(--platinum-bright); gap: 16px; }
+
+  /* table */
+  .adm-table { width: 100%; margin-top: clamp(30px,5vh,46px); border-top: 1px solid var(--line); }
+  .adm-row { display: grid; grid-template-columns: 38px 1.25fr 1.7fr 1fr 0.95fr 1.05fr; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+  .adm-row.head { border-bottom: 1px solid var(--line); }
+  .adm-row.head span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--platinum-deep); }
+  .adm-row .c-no { font-family: var(--mono); font-size: 12px; color: var(--platinum-deep); }
+  .adm-row .c-name a { color: var(--fg); border-bottom: 1px solid var(--line); padding-bottom: 1px; transition: color 0.35s var(--ease), border-color 0.35s var(--ease); cursor: pointer; }
+  .adm-row .c-name a:hover { color: var(--platinum-bright); border-color: var(--platinum); }
+  .adm-row .c-email { color: var(--fg-dim); font-size: 0.9rem; word-break: break-word; }
+  .adm-row .c-end, .adm-row .c-login, .adm-row .c-invite { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--fg-dim); }
+  .adm-row .c-end.none { color: var(--mute); }
+  .adm-row .c-end.exp { color: var(--minerva-red-bright); }
+  .adm-empty { padding: 40px 0; font-weight: 300; color: var(--fg-dim); font-size: 1rem; }
+  @media (max-width: 680px) {
+    .adm-row { grid-template-columns: 32px 1fr 1fr; }
+    .adm-row .c-end, .adm-row .c-login, .adm-row .c-invite { display: none; }
+    .adm-row.head .c-end, .adm-row.head .c-login, .adm-row.head .c-invite { display: none; }
+  }
+
+  /* detail */
+  .adm-detail-meta { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 18px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--fg-dim); }
+  .adm-detail-meta b { color: var(--platinum); font-weight: 500; }
+  .adm-status { display: inline-flex; align-items: center; gap: 8px; }
+  .adm-status .pip { width: 7px; height: 7px; border-radius: 50%; background: var(--platinum-bright); }
+  .adm-status.expired .pip { background: var(--minerva-red-bright); }
+  .adm-extreq { margin-top: 22px; border: 1px solid rgba(177,29,42,0.4); border-left-width: 2px; padding: 14px 18px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; line-height: 1.7; color: var(--platinum); background: rgba(177,29,42,0.06); }
+  .adm-extreq b { color: var(--minerva-red-bright); }
+  .adm-section-h { display: flex; align-items: center; gap: 16px; margin: clamp(34px,5vh,50px) 0 18px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--platinum-deep); }
+  .adm-section-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .adm-logins { display: flex; flex-direction: column; }
+  .adm-login-item { display: flex; align-items: baseline; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; color: var(--fg-dim); }
+  .adm-login-item .i { color: var(--platinum-deep); }
+  .adm-login-item .ev-label { color: var(--fg); }
+  .adm-login-item .ev-date { margin-left: auto; color: var(--platinum-deep); white-space: nowrap; }
+  .adm-login-item.ev-cancelled .ev-label { color: var(--minerva-red-bright); }
+  .btn-cancel { background: transparent; color: var(--minerva-red-bright); border: 1px solid rgba(177,29,42,0.5); font-family: var(--mono); font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; padding: 15px 24px; cursor: pointer; transition: background 0.35s var(--ease), color 0.35s var(--ease), border-color 0.35s var(--ease); }
+  .btn-cancel:hover { background: var(--minerva-red); color: #fff; border-color: var(--minerva-red); }
+  .adm-extend { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+  .adm-extend .field { flex: 1; min-width: 200px; }
+  .adm-extend .btn { margin-top: 0; white-space: nowrap; }
+  .adm-extend input[type="date"], .adm-form input[type="date"] { color-scheme: dark; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.85); opacity: 0.6; cursor: pointer; padding-left: 6px; }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+  /* credentials result */
+  .cred-card { width: min(92vw,520px); margin-top: clamp(30px,5vh,46px); border: 1px solid var(--line); padding: clamp(26px,3.4vw,40px); display: flex; flex-direction: column; gap: 20px; background: linear-gradient(180deg,#070809,#050506); }
+  .cred-row { display: flex; flex-direction: column; gap: 5px; }
+  .cred-row .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--platinum-deep); }
+  .cred-row .v { font-size: 1.05rem; color: var(--fg); word-break: break-word; }
+  .cred-row .v.pw { font-family: var(--mono); letter-spacing: 0.08em; color: var(--platinum-bright); font-size: 1.15rem; }
+  .cred-copy { display: inline-flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; background: transparent; border: 1px solid var(--line); color: var(--fg-dim); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; padding: 15px; cursor: pointer; transition: color 0.35s var(--ease), border-color 0.35s var(--ease); }
+  .cred-copy:hover { color: var(--fg); border-color: var(--platinum-deep); }
+  .cred-copy.done { color: var(--platinum-bright); border-color: var(--platinum); }
+  .cred-copy svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .cred-deliver { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; line-height: 1.7; color: var(--mute); border-top: 1px solid var(--line-soft); padding-top: 16px; }
+
+  /* sandbox overlay */
+  .sandbox { position: fixed; inset: 0; z-index: 200; background: #000; display: grid; place-items: center; }
+  .sandbox-inner { display: flex; flex-direction: column; align-items: center; gap: clamp(22px,4vh,36px); text-align: center; padding: 0 var(--pad); }
+  .sandbox-ring { position: relative; width: clamp(96px,18vw,140px); height: clamp(96px,18vw,140px); }
+  .sandbox-ring .r { position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--line); }
+  .sandbox-ring .r::after { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid transparent; border-top-color: var(--platinum-bright); animation: admSpin 1.05s linear infinite; }
+  .sandbox-ring .wm { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 300; font-size: clamp(1.6rem,4vw,2.4rem); color: var(--platinum); }
+  .sandbox-label { font-family: var(--mono); font-size: clamp(10px,1.1vw,12px); letter-spacing: 0.34em; text-transform: uppercase; color: var(--platinum-deep); }
+  .sandbox-status { font-weight: 300; font-size: clamp(1rem,2vw,1.3rem); color: var(--fg-dim); letter-spacing: 0.02em; min-height: 1.4em; }
+  .sandbox-bar { width: min(320px,70vw); height: 1px; background: var(--faint); position: relative; overflow: hidden; }
+  .sandbox-bar i { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: var(--platinum-bright); transition: width 0.4s linear; }
+  @keyframes admSpin { to { transform: rotate(360deg); } }
+
+  /* FAQ */
+  .adm-faq { margin-top: clamp(50px,8vh,90px); border-top: 1px solid var(--line); padding-top: clamp(30px,5vh,46px); }
+  .adm-faq > .adm-section-h { margin-top: 0; }
+  .faq-item { border-bottom: 1px solid var(--line-soft); }
+  .faq-item summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; align-items: baseline; gap: 16px; font-weight: 400; font-size: clamp(1rem,1.8vw,1.18rem); color: var(--fg); transition: color 0.35s var(--ease); }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary:hover { color: var(--platinum-bright); }
+  .faq-item summary .q-mark { font-family: var(--mono); font-size: 12px; color: var(--platinum-deep); flex: none; }
+  .faq-item summary .plus { margin-left: auto; font-family: var(--mono); color: var(--platinum-deep); transition: transform 0.4s var(--ease); }
+  .faq-item[open] summary .plus { transform: rotate(45deg); color: var(--platinum); }
+  .faq-item .a { padding: 0 0 20px 32px; font-weight: 300; font-size: clamp(0.92rem,1.5vw,1.02rem); line-height: 1.7; color: var(--fg-dim); text-wrap: pretty; max-width: 64ch; }
+  .faq-item .a code { font-family: var(--mono); font-size: 0.86em; color: var(--platinum-bright); background: rgba(184,188,194,0.08); padding: 2px 7px; letter-spacing: 0.04em; }
+</style>
+</head>
+<body class="inner">
+
+  <header class="adm-top" id="admTop" hidden>
+    <div class="adm-brand"><a class="wm" href="index.html">MINERVA</a><span class="lbl">Administration</span></div>
+    <a class="top-logo" href="index.html" aria-label="Minerva — home"><img src="uploads/minerva-logo-black.png" alt="Minerva"></a>
+    <button class="adm-signout" id="admSignout" type="button">Sign out</button>
+  </header>
+
+  <main id="admRoot"></main>
+
+  <script src="assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/vip.js" data-vip-engine="1"></script>
+  <script>
+  (function () {
+    'use strict';
+    var V;
+    // Wait for the engine to exist AND for its first Supabase session check to
+    // resolve, so V.isAdmin() reflects the real session before we route.
+    function ready(fn) {
+      if (window.MinervaVIP) { V = window.MinervaVIP; (V.ready ? V.ready(fn) : fn()); return; }
+      setTimeout(function () { ready(fn); }, 40);
+    }
+
+    var root = document.getElementById('admRoot');
+    var top = document.getElementById('admTop');
+    var LAST_NEW = 'minerva_admin_lastnew';
+    var LAST_USER = 'minerva_admin_lastuser';
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m]; }); }
+    function ss(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+    function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+
+    /* ---------------- GATE ---------------- */
+    /* Login now happens on the central login page; the console only opens for an
+       authenticated super-admin, otherwise we send them to login.html. */
+    function toLogin() { location.href = 'login.html'; }
+
+    /* ---------------- MENU + FAQ ---------------- */
+    var FAQ = [
+      ['How do I grant a guest VIP access?', 'Open <code>Create a VIP user</code>, enter their name and email, and (optionally) an access end date. On <code>Create user</code> the system provisions the account and generates a unique password. Copy the credentials and send them to your guest through your own secure channel.'],
+      ['What does the access end date do?', 'It is the last day the guest can reach the VIP-only pages. Leave it <code>blank</code> for access with no expiry. After the end date the guest is locked out automatically and sees an “access expired” banner.'],
+      ['How does the guest receive their password?', 'The password is generated here, once. There is no automated email in this prototype — you copy the credentials with the <code>Copy</code> button and deliver them to the guest yourself (email, message, in person). For security, the password is not shown again afterwards.'],
+      ['Can I extend or renew someone’s access?', 'Yes. Open <code>VIP users</code>, click the guest’s name, enter a new date in <code>Extend access</code> and press <code>Execute</code>. The new end date takes effect immediately.'],
+      ['How do I know when a guest asks for more time?', 'A signed-in guest can tap <code>Request extension</code> (or <code>Extend access</code> once lapsed) in their welcome banner. Their request is flagged at the top of their profile in <code>VIP users</code> until you set a new date.'],
+      ['Which pages are VIP-only?', 'The <code>About Us</code> team section, the <code>Aegis</code> page and the <code>Sovereign</code> page. Everything else on the site stays public. Super-admin and valid VIP guests see them in full.'],
+      ['Where is this data stored — is it secure?', 'This is a front-end prototype: users, passwords and sessions are kept in this browser only, and access is remembered with a cookie. There is no server. Before going live, connect a backend for real authentication, encrypted storage and email delivery.'],
+      ['Who can see the Admin menu item?', 'Only this browser, while you are signed in as super-admin (detected by cookie). It is never shown to the public or to VIP guests. <code>Sign out</code> removes it and clears admin access here.']
+    ];
+    function renderMenu() {
+      top.hidden = false;
+      var faq = FAQ.map(function (q) {
+        return '<details class="faq-item"><summary><span class="q-mark">Q</span>' + esc(q[0]) + '<span class="plus">+</span></summary>'
+          + '<div class="a">' + q[1] + '</div></details>';
+      }).join('');
+      root.innerHTML = ''
+        + '<div class="adm-wrap" data-screen-label="Admin Menu">'
+        +   '<p class="adm-eyebrow">Super-admin console</p>'
+        +   '<h1 class="adm-h1">Administration</h1>'
+        +   '<p class="adm-sub">Manage privileged access to Minerva’s private pages — provision VIP guests, set how long their access lasts, and review their activity.</p>'
+        +   '<div class="adm-menu">'
+        +     '<div class="adm-card" data-go="#create"><span class="num">01</span><span class="title">Create a VIP user</span>'
+        +       '<span class="desc">Provision a new guest, set an optional end date and generate their credentials.</span><span class="go">Create →</span></div>'
+        +     '<div class="adm-card" data-go="#users"><span class="num">02</span><span class="title">VIP users</span>'
+        +       '<span class="desc">Review every guest, their access term, last sign-in and extension requests.</span><span class="go">View register →</span></div>'
+        +   '</div>'
+        +   '<section class="adm-faq" data-screen-label="Admin FAQ">'
+        +     '<p class="adm-section-h">Frequently asked — for super-admins</p>'
+        +     faq
+        +   '</section>'
+        + '</div>';
+      [].forEach.call(root.querySelectorAll('[data-go]'), function (c) {
+        c.addEventListener('click', function () { location.hash = c.getAttribute('data-go'); render(); });
+      });
+    }
+
+    /* ---------------- CREATE ---------------- */
+    function renderCreate() {
+      top.hidden = false;
+      root.innerHTML = ''
+        + '<div class="adm-wrap" data-screen-label="Create VIP">'
+        +   '<p class="adm-eyebrow">Super-admin · 01</p>'
+        +   '<h1 class="adm-h1">Create a VIP user</h1>'
+        +   '<p class="adm-sub">The system will generate a unique password. Leave the end date blank for access with no expiry.</p>'
+        +   '<form class="adm-form" id="createForm" autocomplete="off" onsubmit="return false;">'
+        +     '<div class="field"><label for="cName">User name</label><input id="cName" type="text" placeholder="Full name"></div>'
+        +     '<div class="field"><label for="cEmail">Email address</label><input id="cEmail" type="email" placeholder="guest@example.com"></div>'
+        +     '<div class="field"><label for="cEnd">End date — access expires</label><input id="cEnd" type="date">'
+        +       '<span class="field-hint">Leave blank for no end-date restriction.</span></div>'
+        +     '<p class="adm-err" id="cErr"></p>'
+        +     '<button class="btn" type="submit" id="cBtn">Create user</button>'
+        +   '</form>'
+        +   '<a class="back-admin" href="#menu">← Back to admin</a>'
+        + '</div>';
+      bindBack();
+      var f = document.getElementById('createForm');
+      var err = document.getElementById('cErr');
+      var btn = document.getElementById('cBtn');
+      function go() {
+        err.textContent = '';
+        var name = document.getElementById('cName').value.trim();
+        var email = document.getElementById('cEmail').value.trim();
+        var end = document.getElementById('cEnd').value || null;
+        if (!name) { err.textContent = 'Enter a user name'; return; }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email'; return; }
+        // The Edge Function provisions the auth user + profile and sends the
+        // invitation; it rejects a duplicate email with an error we surface here.
+        btn.disabled = true; err.textContent = 'Creating…';
+        Promise.resolve(V.store.create(name, email, end)).then(function (u) {
+          ssSet(LAST_NEW, u.id);
+          // stash the one-time password so the created screen can show it
+          try { sessionStorage.setItem('minerva_admin_lastpw', u.password || ''); } catch (e) {}
+          location.hash = '#created'; render();
+        }).catch(function (e) {
+          btn.disabled = false;
+          var msg = (e && e.message) ? e.message : 'Could not create this user';
+          err.textContent = /exist|registered|duplicate/i.test(msg) ? 'A VIP user with this email already exists' : msg;
+        });
+      }
+      f.addEventListener('submit', go);
+      document.getElementById('cBtn').addEventListener('click', go);
+    }
+
+    /* ---------------- CREATED (sandbox + credentials) ---------------- */
+    /* ---------------- Minerva Sandbox + invitation flow ---------------- */
+    function loginUrl() { return location.origin + location.pathname.replace(/admin\.html$/, 'login.html'); }
+    function inviteLink(u) { return loginUrl() + '?invite=' + encodeURIComponent(u.id); }
+
+    // The Minerva Sandbox — the same ring-and-logo overlay used by the
+    // heritage “register interest” flow. Runs ~5s then returns to the admin menu.
+    function runInviteFlow(u, verb) {
+      top.hidden = false;
+      Promise.resolve(V.store.markInviteSent(u.id)); // “send” / re-send the invitation
+
+      var ov = document.createElement('div');
+      ov.className = 'reg-overlay';
+      ov.setAttribute('role', 'dialog');
+      ov.setAttribute('aria-label', 'Minerva Sandbox');
+      ov.innerHTML = ''
+        + '<div class="ro-stage">'
+        +   '<span class="ro-ring" aria-hidden="true"></span>'
+        +   '<img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva">'
+        + '</div>'
+        + '<div class="ro-msg">'
+        +   '<p class="ro-thanks">Email invitation ' + (verb || 'sent') + '.<span class="ro-motto">' + esc(u.email) + '</span></p>'
+        +   '<p class="ro-redirect">Returning you to the admin console…</p>'
+        + '</div>';
+      document.body.appendChild(ov);
+      document.body.classList.add('menu-open');
+      // Show immediately (also guarantees visibility where transitions don't animate)
+      ov.classList.add('show');
+      requestAnimationFrame(function () { ov.classList.add('show'); });
+
+      var stage = ov.querySelector('.ro-stage');
+      var msg = ov.querySelector('.ro-msg');
+      setTimeout(function () { stage.classList.add('hide'); msg.classList.add('show'); }, 2600);
+      setTimeout(function () {
+        ov.classList.remove('show');
+        document.body.classList.remove('menu-open');
+        setTimeout(function () { ov.remove(); }, 600);
+        location.hash = '#menu'; render();
+      }, 5000);
+
+      // Underlying confirmation (seen briefly / as fallback)
+      root.innerHTML = ''
+        + '<div class="adm-wrap" data-screen-label="Invitation Sent">'
+        +   '<p class="adm-eyebrow">Super-admin</p>'
+        +   '<h1 class="adm-h1">Invitation ' + esc(verb || 'sent') + '</h1>'
+        +   '<p class="adm-sub">An email invitation has been sent to ' + esc(u.email) + '.</p>'
+        +   '<a class="back-admin" href="#menu">← Back to admin</a>'
+        + '</div>';
+      bindBack();
+    }
+
+    function renderCreated() {
+      Promise.resolve(V.store.get(ss(LAST_NEW))).then(function (u) {
+        if (!u) { location.hash = '#users'; render(); return; }
+        runInviteFlow(u, 'sent');
+      });
+    }
+
+    /* ---------------- USERS LIST ---------------- */
+    function renderUsers() {
+      top.hidden = false;
+      root.innerHTML = '<div class="adm-wrap" data-screen-label="VIP Users"><p class="adm-eyebrow">Super-admin · 02</p><h1 class="adm-h1">VIP users</h1><p class="adm-sub">Loading…</p></div>';
+      Promise.resolve(V.store.all()).then(function (listRaw) {
+        renderUsersList((listRaw || []).slice().sort(function (a, b) { return a.no - b.no; }));
+      }).catch(function (e) {
+        root.innerHTML = '<div class="adm-wrap"><p class="adm-eyebrow">Super-admin · 02</p><h1 class="adm-h1">VIP users</h1><p class="adm-sub" style="color:var(--minerva-red-bright)">Could not load the register — ' + esc((e && e.message) || 'try again') + '</p><a class="back-admin" href="#menu">← Back to admin</a></div>';
+        bindBack();
+      });
+    }
+    function renderUsersList(list) {
+      var rows;
+      if (!list.length) {
+        rows = '<p class="adm-empty">No VIP users yet. Create one from the admin menu.</p>';
+      } else {
+        rows = '<div class="adm-table">'
+          + '<div class="adm-row head"><span class="c-no">№</span><span class="c-name">Name</span><span class="c-email">Email</span><span class="c-invite">Invite sent</span><span class="c-end">End date</span><span class="c-login">Last login</span></div>'
+          + list.map(function (u) {
+              var last = (u.logins && u.logins.length) ? V.fmtDateTime(u.logins[u.logins.length - 1]) : '—';
+              var invite = u.inviteSentAt ? V.fmtDateTime(u.inviteSentAt).split(' · ')[0] : '—';
+              var endCls = u.endDate ? (V.isExpired(u) ? 'exp' : '') : 'none';
+              var endTxt = u.endDate ? (V.fmtDate(u.endDate) + (V.isExpired(u) ? ' · expired' : '')) : 'No end date';
+              var flag = u.extReq ? ' ⚑' : '';
+              return '<div class="adm-row">'
+                + '<span class="c-no">' + (u.no < 10 ? '0' : '') + u.no + '</span>'
+                + '<span class="c-name"><a data-uid="' + esc(u.id) + '">' + esc(u.name) + flag + '</a></span>'
+                + '<span class="c-email">' + esc(u.email) + '</span>'
+                + '<span class="c-invite">' + esc(invite) + '</span>'
+                + '<span class="c-end ' + endCls + '">' + esc(endTxt) + '</span>'
+                + '<span class="c-login">' + esc(last) + '</span>'
+                + '</div>';
+            }).join('')
+          + '</div>';
+      }
+      root.innerHTML = ''
+        + '<div class="adm-wrap" data-screen-label="VIP Users">'
+        +   '<p class="adm-eyebrow">Super-admin · 02</p>'
+        +   '<h1 class="adm-h1">VIP users</h1>'
+        +   '<p class="adm-sub">' + list.length + ' registered guest' + (list.length === 1 ? '' : 's') + '. Select a name to view sign-ins and manage access.</p>'
+        +   rows
+        +   '<a class="back-admin" href="#menu">← Back to admin</a>'
+        + '</div>';
+      bindBack();
+      [].forEach.call(root.querySelectorAll('[data-uid]'), function (a) {
+        a.addEventListener('click', function () { ssSet(LAST_USER, a.getAttribute('data-uid')); location.hash = '#user'; render(); });
+      });
+    }
+
+    /* ---------------- USER DETAIL ---------------- */
+    function renderUser() {
+      top.hidden = false;
+      root.innerHTML = '<div class="adm-wrap" data-screen-label="VIP User"><p class="adm-eyebrow">Super-admin · 02</p><h1 class="adm-h1">…</h1><p class="adm-sub">Loading…</p></div>';
+      Promise.resolve(V.store.get(ss(LAST_USER))).then(function (u) {
+        if (!u) { location.hash = '#users'; render(); return; }
+        renderUserDetail(u);
+      }).catch(function (e) {
+        root.innerHTML = '<div class="adm-wrap"><h1 class="adm-h1">VIP user</h1><p class="adm-sub" style="color:var(--minerva-red-bright)">Could not load this profile — ' + esc((e && e.message) || 'try again') + '</p><a class="back-admin" href="#users">← Back</a></div>';
+        [].forEach.call(root.querySelectorAll('.back-admin'), function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); location.hash = '#users'; render(); }); });
+      });
+    }
+    function renderUserDetail(u) {
+      var expired = V.isExpired(u);
+      var cancelled = !!u.cancelled;
+      var statusTxt = cancelled ? 'Cancelled' : (!u.endDate ? 'Active · no expiry' : (expired ? 'Expired' : 'Active'));
+      var statusCls = (cancelled || expired) ? 'expired' : '';
+
+      // Unified history log (newest first). Backfill legacy users that predate event logging.
+      var LABELS = { created: 'User created', invited: 'User invited', 're-invited': 'User re-invited', extension: 'User requested extension', cancelled: 'User cancelled', login: 'User login' };
+      var ev = (u.events || []).slice();
+      if (!ev.length) {
+        if (u.created) ev.push({ type: 'created', ts: u.created });
+        if (u.inviteSentAt) ev.push({ type: 'invited', ts: u.inviteSentAt });
+        (u.logins || []).forEach(function (ts) { ev.push({ type: 'login', ts: ts }); });
+        if (u.extReq) ev.push({ type: 'extension', ts: u.extReq.ts });
+      }
+      ev.sort(function (a, b) { return b.ts - a.ts; });
+      var logHtml = ev.length
+        ? ev.map(function (e, idx) {
+            var n = ev.length - idx;
+            return '<div class="adm-login-item' + (e.type === 'cancelled' ? ' ev-cancelled' : '') + '">'
+              + '<span class="i">' + (n < 10 ? '0' : '') + n + '</span>'
+              + '<span class="ev-label">' + esc(LABELS[e.type] || e.type) + '</span>'
+              + '<span class="ev-date">' + esc(V.fmtDateTime(e.ts)) + '</span></div>';
+          }).join('')
+        : '<div class="adm-login-item" style="color:var(--mute)">No events recorded yet.</div>';
+
+      var extReqHtml = '';
+      if (u.extReq) {
+        extReqHtml = '<div class="adm-extreq"><b>⚑ Extension requested</b> — on ' + esc(V.fmtDateTime(u.extReq.ts))
+          + (u.extReq.from ? ' · current end date ' + esc(V.fmtDate(u.extReq.from)) : ' · no end date set')
+          + '. Set a new date below to grant it.</div>';
+      }
+
+      root.innerHTML = ''
+        + '<div class="adm-wrap" data-screen-label="VIP User">'
+        +   '<p class="adm-eyebrow">Super-admin · 02 · User ' + (u.no < 10 ? '0' : '') + u.no + '</p>'
+        +   '<h1 class="adm-h1">' + esc(u.name) + '</h1>'
+        +   '<div class="adm-detail-meta">'
+        +     '<span>Email <b>' + esc(u.email) + '</b></span>'
+        +     '<span class="adm-status ' + statusCls + '"><span class="pip"></span>' + statusTxt + '</span>'
+        +     '<span>End date <b>' + (u.endDate ? esc(V.fmtDate(u.endDate)) : 'None') + '</b></span>'
+        +   '</div>'
+        +   extReqHtml
+        +   '<p class="adm-section-h">Invitation</p>'
+        +   '<div class="adm-detail-meta"><span>Invitation sent <b>' + (u.inviteSentAt ? esc(V.fmtDateTime(u.inviteSentAt)) : 'Not yet') + '</b></span></div>'
+        +   '<div class="adm-extend"><button class="btn" type="button" id="resendBtn">Resend invite</button></div>'
+        +   '<p class="cred-deliver" style="margin-top:14px;">Invitation link (for manual send / testing)<br><a id="inviteLink" href="' + esc(inviteLink(u)) + '" style="color:var(--platinum);word-break:break-all;">' + esc(inviteLink(u)) + '</a></p>'
+        +   '<p class="adm-section-h">History log</p>'
+        +   '<div class="adm-logins">' + logHtml + '</div>'
+        +   '<p class="adm-section-h">Extend access</p>'
+        +   (cancelled ? '<p class="field-hint" style="margin:-6px 0 12px;">Access is cancelled. Enter a future date and press Execute to grant access again.</p>' : '')
+        +   '<form class="adm-extend" id="extForm" onsubmit="return false;">'
+        +     '<div class="field"><label for="extDate">New end date</label><input id="extDate" type="date" value="' + (cancelled ? '' : (u.endDate || '')) + '"></div>'
+        +     '<button class="btn" type="submit" id="extBtn">Execute</button>'
+        +   '</form>'
+        +   '<p class="adm-okmsg" id="extMsg" style="margin-top:14px;"></p>'
+        +   '<p class="adm-section-h">Cancel access</p>'
+        +   (cancelled
+             ? '<p class="adm-okmsg" style="color:var(--minerva-red-bright);">Access cancelled on ' + esc(V.fmtDateTime(u.cancelled)) + '</p>'
+             : '<div class="adm-extend"><button class="btn-cancel" type="button" id="cancelBtn">Cancel access</button></div>')
+        +   '<a class="back-admin" href="#menu" style="margin-top:clamp(34px,5vh,52px);">← Back to admin</a>'
+        + '</div>';
+      bindBack();
+      document.getElementById('resendBtn').addEventListener('click', function () {
+        ssSet(LAST_NEW, u.id);
+        location.hash = '#created'; render();
+      });
+      var cancelEl = document.getElementById('cancelBtn');
+      if (cancelEl) {
+        cancelEl.addEventListener('click', function () {
+          if (confirm('Cancel VIP access for ' + u.name + '? This immediately removes their access and is recorded in the history log.')) {
+            cancelEl.disabled = true;
+            Promise.resolve(V.store.cancel(u.id)).then(function () { render(); })
+              .catch(function (e) { cancelEl.disabled = false; alert('Could not cancel — ' + ((e && e.message) || 'try again')); });
+          }
+        });
+      }
+      var f = document.getElementById('extForm');
+      var msg = document.getElementById('extMsg');
+      var extBtn = document.getElementById('extBtn');
+      function go() {
+        var d = document.getElementById('extDate').value || null;
+        extBtn.disabled = true; msg.style.color = ''; msg.textContent = 'Saving…';
+        Promise.resolve(V.store.extend(u.id, d)).then(function () {
+          if (cancelled) { msg.textContent = d ? ('Access restored — valid until ' + V.fmtDate(d)) : 'Access restored — no expiry'; }
+          else { msg.textContent = d ? ('Access extended to ' + V.fmtDate(d)) : 'End date cleared — access has no expiry'; }
+          setTimeout(function () { render(); }, 900);
+        }).catch(function (e) {
+          extBtn.disabled = false; msg.style.color = 'var(--minerva-red-bright)';
+          msg.textContent = 'Could not save — ' + ((e && e.message) || 'try again');
+        });
+      }
+      f.addEventListener('submit', go);
+      extBtn.addEventListener('click', go);
+    }
+
+    function bindBack() {
+      [].forEach.call(root.querySelectorAll('.back-admin'), function (a) {
+        a.addEventListener('click', function (e) { e.preventDefault(); location.hash = '#menu'; render(); });
+      });
+    }
+
+    /* ---------------- ROUTER ---------------- */
+    function render() {
+      if (!V.isAdmin()) { toLogin(); return; }
+      document.getElementById('admSignout').style.display = '';
+      var h = (location.hash || '#menu').replace('#', '');
+      if (h === 'create') return renderCreate();
+      if (h === 'created') return renderCreated();
+      if (h === 'users') return renderUsers();
+      if (h === 'user') return renderUser();
+      return renderMenu();
+    }
+
+    ready(function () {
+      document.getElementById('admSignout').addEventListener('click', function () {
+        Promise.resolve(V.adminLogout()).then(function () { location.href = 'login.html'; }, function () { location.href = 'login.html'; });
+      });
+      window.addEventListener('hashchange', render);
+      render();
+    });
+  })();
+  </script>
+</body>
+</html>

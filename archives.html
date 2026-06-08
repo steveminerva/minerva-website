@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minerva Motors Heritage — Minerva Luxury Motors Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+</head>
+<body class="inner">
+
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <nav class="menu-overlay" id="menu" aria-hidden="true" aria-label="Main menu">
+    <div class="menu-ghost" aria-hidden="true">MINERVA</div>
+    <div class="menu-inner">
+      <div class="menu-main">
+        <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
+        <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">03</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">04</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">05</span>News</a>
+      </div>
+      <div class="menu-foot">
+        <div class="menu-foot-left">
+          <a class="menu-login" href="login.html">Login</a>
+          <form class="subscribe" id="subscribeForm" autocomplete="off">
+            <label class="subscribe-lbl" for="subEmail">Subscribe for the announcement</label>
+            <div class="subscribe-row">
+              <input id="subEmail" type="email" placeholder="Email address" required>
+              <button type="submit" aria-label="Subscribe">Subscribe</button>
+            </div>
+            <p class="subscribe-done" id="subscribeDone" hidden>Thank you — you're on the list.</p>
+          </form>
+        </div>
+        <div class="menu-lang" id="langRow" role="group" aria-label="Language">
+          <button class="lang active" data-lang="en">English</button>
+          <button class="lang" data-lang="nl">Nederlands</button>
+          <button class="lang" data-lang="fr">Français</button>
+          <button class="lang" data-lang="de">Deutsch</button>
+          <button class="lang" data-lang="it">Italiano</button>
+          <button class="lang" data-lang="es">Español</button>
+          <button class="lang cjk" data-lang="zh">中文</button>
+          <button class="lang cjk" data-lang="ja">日本語</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="archive-wrap" data-screen-label="Archives">
+    <p class="page-eyebrow">Minerva Luxury Motors Club</p>
+    <h1 class="page-title" data-i18n="arch.title">Minerva Motors Heritage</h1>
+    <p class="archive-lede">The Minerva Luxury Motors Club preserves the marque's documented record — period photographs, coachbuilders' records and chassis registers — in close partnership with existing stakeholders dedicated to the conservation of the brand. We invite owners, historians and enthusiasts to take part in conserving this heritage, and to join us at our collector's events.</p>
+
+    <div class="archive-gallery" aria-label="Archive photographs">
+      <span class="ag-shot"><img src="uploads/picture1.jpg" alt="Minerva motor car"></span>
+      <span class="ag-shot"><img src="uploads/picture2.jpg" alt="Minerva motor car"></span>
+      <span class="ag-shot"><img src="uploads/picture3.jpg" alt="Minerva motor car"></span>
+      <span class="ag-shot"><img src="uploads/picture4.jpg" alt="Minerva motor car"></span>
+      <span class="ag-shot"><img src="uploads/minervabike-090318e9.jpg" alt="Minerva motorised cycle"></span>
+      <span class="ag-shot"><img src="uploads/minervabw1-001c1c1e.jpg" alt="Minerva racing car"></span>
+    </div>
+
+    <form class="archive-reg" id="interestForm" autocomplete="off">
+      <p class="reg-h">Register your interest</p>
+      <div class="reg-options">
+        <label class="reg-check">
+          <input type="checkbox" name="interest" value="conservation" checked>
+          <span class="reg-box"></span>
+          <span class="reg-lbl">I would like to take part in history conservation</span>
+        </label>
+        <label class="reg-check">
+          <input type="checkbox" name="interest" value="events" checked>
+          <span class="reg-box"></span>
+          <span class="reg-lbl">Invite me to collector's events</span>
+        </label>
+      </div>
+      <div class="field">
+        <label for="regEmail">Email</label>
+        <input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <label class="reg-consent">
+        <input type="checkbox" id="regEmailConsent" required>
+        <span>I give Minerva permission to contact me by email about the archives, history conservation and collector's events. I may withdraw my consent at any time. See our <a href="#">Privacy &amp; Cookie Policy</a>.</span>
+      </label>
+      <button class="btn" type="submit">Register interest</button>
+      <p class="reg-done" id="regDone" hidden>Thank you — your interest has been registered.</p>
+    </form>
+  </main>
+
+  <div class="reg-overlay" id="regOverlay" hidden role="dialog" aria-label="Registration confirmation">
+    <div class="ro-stage">
+      <span class="ro-ring" aria-hidden="true"></span>
+      <img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva">
+    </div>
+    <div class="ro-msg">
+      <p class="ro-thanks">You share our passion for the marque or hold a piece of its history, we are honoured to build its future together. <span class="ro-motto">Sapientia et Ars.</span></p>
+      <p class="ro-redirect" id="roRedirect" hidden>We will redirect you to the home page within <span id="roCount">10</span> seconds…</p>
+    </div>
+  </div>
+
+  <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
+
+  <script src="assets/i18n.js"></script>
+  <script src="assets/minerva.js"></script>
+</body>
+</html>
