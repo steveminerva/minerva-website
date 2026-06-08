@@ -11,5 +11,5 @@
    ============================================================ */
 window.MINERVA_SUPABASE = {
   url: "https://ojwvdfdkybutuflwbutd.supabase.co",
-  anonKey: "REPLACE_WITH_SUPABASE_ANON_KEY"   // public anon key — fill before go-live
+  anonKey: "sb_publishable_VkjdD10b7fj5OetHKCgxIw_JmOvH8DS"   // public publishable key (safe in client; RLS protects data)
 };
