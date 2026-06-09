@@ -1,0 +1,36 @@
+name: Deploy Supabase Edge Functions
+
+# Runs whenever a function changes on main (or when triggered manually).
+# Deploys every function in supabase/functions/ to the UAT Supabase project,
+# with JWT verification OFF (each function checks admin rights itself).
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ojwvdfdkybutuflwbutd
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy all edge functions
+        run: |
+          for dir in supabase/functions/*/; do
+            name=$(basename "$dir")
+            if [ "$name" = "_shared" ]; then continue; fi
+            echo "Deploying $name ..."
+            supabase functions deploy "$name" \
+              --project-ref "$PROJECT_REF" \
+              --no-verify-jwt
+          done

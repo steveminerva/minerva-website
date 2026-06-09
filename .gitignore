@@ -1,0 +1,29 @@
+# Build output / local
+_site/
+node_modules/
+.DS_Store
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+.env
+.env.*
+
+# Migrations hold private content (seeded VIP-only pages) — applied manually,
+# kept out of the public repo. Edge functions DO go in the repo (no secrets).
+supabase/migrations/
+supabase/seed*.sql
+
+# Internal / working docs — keep out of the public repo
+SUPABASE-HANDOFF.md
+README-DEPLOY.txt
+SUPABASE_SETUP.md
+BUILD-NOTES.md
+deployment/
+_archive_netlify_v7/
+app-uat/
+
+# Confidential — never commit
+uploads/*.pdf
+**/Minerva_GTM_*.pdf
+**/TEAM PRESENTATION.docx

@@ -1,0 +1,2 @@
+# Minimal Supabase CLI config (local label only; no secrets).
+project_id = "minerva-website"
