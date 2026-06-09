@@ -226,12 +226,12 @@
         + '<div class="adm-wrap" data-screen-label="Create VIP">'
         +   '<p class="adm-eyebrow">Super-admin · 01</p>'
         +   '<h1 class="adm-h1">Create a VIP user</h1>'
-        +   '<p class="adm-sub">The system will generate a unique password. Leave the end date blank for access with no expiry.</p>'
+        +   '<p class="adm-sub">The system will generate a unique password. Access can be granted for up to 3 months.</p>'
         +   '<form class="adm-form" id="createForm" autocomplete="off" onsubmit="return false;">'
         +     '<div class="field"><label for="cName">User name</label><input id="cName" type="text" placeholder="Full name"></div>'
         +     '<div class="field"><label for="cEmail">Email address</label><input id="cEmail" type="email" placeholder="guest@example.com"></div>'
-        +     '<div class="field"><label for="cEnd">End date — access expires</label><input id="cEnd" type="date">'
-        +       '<span class="field-hint">Leave blank for no end-date restriction.</span></div>'
+        +     '<div class="field"><label for="cEnd">End date — access expires</label><input id="cEnd" type="date" required>'
+        +       '<span class="field-hint">Choose an end date up to 3 months from today.</span></div>'
         +     '<p class="adm-err" id="cErr"></p>'
         +     '<button class="btn" type="submit" id="cBtn">Create user</button>'
         +   '</form>'
@@ -241,6 +241,15 @@
       var f = document.getElementById('createForm');
       var err = document.getElementById('cErr');
       var btn = document.getElementById('cBtn');
+      // Friendly date picker: constrain the access end date to between today and
+      // 3 months out, pre-filled to the 3-month maximum (the picker itself then
+      // won't allow choosing anything outside that window).
+      function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+      var _today = new Date();
+      var _min = ymd(_today);
+      var _max = ymd(new Date(_today.getFullYear(), _today.getMonth() + 3, _today.getDate()));
+      var endEl = document.getElementById('cEnd');
+      endEl.min = _min; endEl.max = _max; endEl.value = _max;
       function go() {
         err.textContent = '';
         var name = document.getElementById('cName').value.trim();
@@ -248,6 +257,9 @@
         var end = document.getElementById('cEnd').value || null;
         if (!name) { err.textContent = 'Enter a user name'; return; }
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email'; return; }
+        if (!end) { err.textContent = 'Select an access end date'; return; }
+        if (end < _min) { err.textContent = 'End date cannot be in the past'; return; }
+        if (end > _max) { err.textContent = 'Access cannot exceed 3 months'; return; }
         // The Edge Function provisions the auth user + profile and sends the
         // invitation; it rejects a duplicate email with an error we surface here.
         btn.disabled = true; err.textContent = 'Creating…';
