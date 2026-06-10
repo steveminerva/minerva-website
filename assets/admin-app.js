@@ -462,7 +462,7 @@
         + pageList.map(function (u) {
             var role = u.role || 'vip';
             var isSuperRow = String(u.email || '').toLowerCase() === 'admin@minervaluxurymotors.com';
-            var roleLbl = isSuperRow ? 'Super admin' : (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP');
+            var roleLbl = isSuperRow ? 'Super admin' : (role === 'admin' ? 'Admin' : role === 'heritage' ? ('Heritage-' + (u.tier || 'admirer')) : 'VIP');
             var last = (u.logins && u.logins.length) ? V.fmtDateTime(u.logins[u.logins.length - 1]).split(' \u00b7 ')[0] : '\u2014';
             var endCls = role === 'admin' ? 'none' : (u.endDate ? (V.isExpired(u) ? 'exp' : '') : 'none');
             var endTxt = role === 'admin' ? 'No expiry' : (u.cancelled ? 'Cancelled' : (u.endDate ? (V.fmtDate(u.endDate) + (V.isExpired(u) ? ' \u00b7 expired' : '')) : 'No end date'));
@@ -533,7 +533,7 @@
       +   '<p class="adm-crumb"><a class="cr-root" href="#users">Manage Users</a><span class="cr-sep">›</span><span class="cr-here">' + esc(u.name) + '</span></p>'
       +   '<div class="adm-detail-meta" style="margin-top:20px;">'
       +     '<span>Email <b>' + esc(u.email) + '</b></span>'
-      +     '<span>Role <b>' + (isSuperRow ? 'Super admin' : role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</b></span>'
+      +     '<span>Role <b>' + (isSuperRow ? 'Super admin' : role === 'admin' ? 'Admin' : role === 'heritage' ? ('Heritage-' + (u.tier || 'admirer')) : 'VIP') + '</b></span>'
       +     '<span class="adm-status ' + statusCls + '"><span class="pip"></span>' + statusTxt + '</span>'
       +     (isAdminUser ? '' : '<span>End date <b>' + (u.endDate ? esc(V.fmtDate(u.endDate)) : 'None') + '</b></span>')
       +   '</div>'
@@ -1469,7 +1469,10 @@
   function startImpersonation(id) {
     if (!V.setImpersonation || !V.setImpersonation(id)) return;
     var isMember = !!(V.heritageMembers && V.heritageMembers().some(function (m) { return m.id === id; }));
-    location.href = isMember ? 'portal.html' : 'index.html';
+    var tu = V.store.get ? V.store.get(id) : null;
+    var isAdminTarget = !!(tu && tu.role === 'admin');
+    // Admin → see the console as that admin; member → portal; VIP → public site.
+    location.href = isAdminTarget ? 'admin.html' : (isMember ? 'portal.html' : 'index.html');
   }
   function openImpersonatePicker() {
     if (!((V.isSuperAdmin && V.isSuperAdmin()) || (V.realIsAdmin && V.realIsAdmin()))) return;
@@ -1484,15 +1487,25 @@
       + '<div class="imp-dlist" id="impList"></div>'
       + '<p class="imp-dhint">You will see the site and console exactly as this user does. A red bar returns you to super-admin at any time.</p></div>';
     document.body.appendChild(ov);
+    var isSup = !!(V.isSuperAdmin && V.isSuperAdmin());
+    var SUPER_EMAIL = 'admin@minervaluxurymotors.com';
     function roleOf(u) { return memIds[u.id] ? 'heritage' : (u.role === 'admin' ? 'admin' : 'vip'); }
     function chip(u) {
       var r = roleOf(u);
-      var lbl = r === 'heritage' ? ('Heritage' + (memIds[u.id] && memIds[u.id].tier ? ' · ' + memIds[u.id].tier : '')) : 'VIP';
-      return '<span class="role-chip vip">' + esc(lbl) + '</span>';
+      var lbl = r === 'admin' ? 'Admin'
+        : r === 'heritage' ? ('Heritage' + (memIds[u.id] && memIds[u.id].tier ? ' · ' + memIds[u.id].tier : ''))
+        : 'VIP';
+      return '<span class="role-chip ' + (r === 'admin' ? 'admin' : 'vip') + '">' + esc(lbl) + '</span>';
     }
     function paint(q) {
       q = (q || '').toLowerCase();
-      var list = users.filter(function (u) { return roleOf(u) !== 'admin' && (!q || ((u.name || '') + ' ' + (u.email || '')).toLowerCase().indexOf(q) >= 0); });
+      var list = users.filter(function (u) {
+        // Never impersonate the super-admin account.
+        if (String(u.email || '').toLowerCase() === SUPER_EMAIL) return false;
+        // Only the super-admin may impersonate other admins; regular admins can't.
+        if (roleOf(u) === 'admin' && !isSup) return false;
+        return (!q || ((u.name || '') + ' ' + (u.email || '')).toLowerCase().indexOf(q) >= 0);
+      });
       document.getElementById('impList').innerHTML = list.length ? list.map(function (u) {
         return '<button class="imp-row" type="button" data-imp="' + esc(u.id) + '"><span class="imp-meta"><span class="imp-nm">' + esc(u.name || '—') + '</span><span class="imp-em">' + esc(u.email || '') + '</span></span>' + chip(u) + '</button>';
       }).join('') : '<p class="adm-empty" style="padding:20px;">No users match.</p>';

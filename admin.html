@@ -537,6 +537,11 @@
   .adm-soon-title { font-weight: 300; letter-spacing: .14em; text-transform: uppercase; font-size: clamp(1.3rem,3vw,1.9rem); margin: 4px 0 0; }
   .adm-soon-body { font-family: var(--mono, monospace); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--platinum, #b8bcc2); margin: 0; }
   .adm-soon-sub { max-width: 52ch; font-weight: 300; font-size: clamp(.95rem,1.6vw,1.05rem); line-height: 1.6; color: var(--fg-dim, #9aa0a8); margin: 6px 0 0; text-wrap: pretty; }
+  /* When the super-admin impersonates an admin, vip.js shows a fixed red return
+     bar (.imp-bar) at top:0 and sets --imp-h. Push the console's fixed sidebar
+     and sticky topbar below it so nothing is covered. */
+  body.has-imp .adm-side { top: var(--imp-h, 40px); }
+  body.has-imp .adm-topbar { top: var(--imp-h, 40px); }
 </style>
 </head>
 <body class="inner">
