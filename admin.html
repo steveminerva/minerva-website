@@ -133,6 +133,17 @@
   .imp-meta { display: flex; flex-direction: column; gap: 2px; }
   .imp-nm { font-size: 14px; } .imp-em { font-size: 12px; color: var(--fg-dim); }
   .imp-dhint { padding: 14px 18px; margin: 0; font-size: 11px; color: var(--mute); line-height: 1.5; border-top: 1px solid var(--line); }
+  /* concierge chat */
+  .cc-stream { min-height: 240px; max-height: 50vh; overflow: auto; border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; margin-top: 18px; background: #070809; }
+  .cc-msg { max-width: 80%; padding: 12px 14px; font-size: 14px; line-height: 1.55; border: 1px solid var(--line); white-space: pre-wrap; }
+  .cc-msg.me { align-self: flex-end; background: #0d0e11; color: var(--fg); }
+  .cc-msg.bot { align-self: flex-start; background: #0a0b0d; color: var(--fg-dim); }
+  .cc-msg.thinking { color: var(--mute); }
+  .cc-sugs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .cc-sug { font-size: 12px; color: var(--fg-dim); background: #0a0b0d; border: 1px solid var(--line); padding: 8px 12px; cursor: pointer; }
+  .cc-sug:hover { border-color: var(--platinum-deep); color: var(--fg); }
+  .cc-bar { display: flex; gap: 10px; }
+  .cc-bar input { flex: 1; background: #0a0b0d; border: 1px solid var(--line); color: var(--fg); font-family: var(--sans); font-size: 14px; padding: 12px 14px; }
   .adm-empty { padding: 40px 0; font-weight: 300; color: var(--fg-dim); font-size: 1rem; }
   @media (max-width: 700px) {
     .adm-row { grid-template-columns: 30px 1fr 1fr !important; }

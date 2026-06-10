@@ -1308,17 +1308,37 @@
   /* ---------------- FAQ ---------------- */
   function renderFaq() {
     topBar.hidden = false;
-    var faq = FAQ.map(function (q) {
-      return '<details class="faq-item"><summary><span class="q-mark">Q</span>' + esc(q[0]) + '<span class="plus">+</span></summary>'
-        + '<div class="a">' + q[1] + '</div></details>';
-    }).join('');
+    var sugs = FAQ.slice(0, 4).map(function (q) { return '<button class="cc-sug" type="button" data-q="' + esc(q[0]) + '">' + esc(q[0]) + '</button>'; }).join('');
     root.innerHTML = ''
-      + '<div class="adm-wrap" data-screen-label="Help">'
-      +   '<p class="adm-crumb"><span class="cr-here">Help</span></p>'
-      +   '<p class="adm-sub" style="margin-top:18px;">Answers to common questions about managing users, access, the audit log and counters.</p>'
-      +   '<section class="adm-faq" style="border-top:none;margin-top:clamp(20px,3vh,30px);padding-top:0;">' + faq + '</section>'
+      + '<div class="adm-wrap" data-screen-label="Concierge">'
+      +   '<p class="adm-crumb"><span class="cr-here">Minerva Concierge</span></p>'
+      +   '<p class="adm-sub" style="margin-top:14px;">Ask about using the console. The concierge only answers within what your role is permitted to see.</p>'
+      +   '<div class="cc-stream" id="ccStream"><div class="cc-msg bot">Good day. I am the Minerva concierge — ask me anything about managing users, access, vehicles or the Heritage programme.</div></div>'
+      +   '<div class="cc-sugs">' + sugs + '</div>'
+      +   '<form class="cc-bar" id="ccForm" onsubmit="return false;"><input id="ccInput" type="text" placeholder="Ask the concierge…" autocomplete="off"><button class="btn" id="ccSend" type="submit">Send</button></form>'
       + '</div>';
     bindBack('#dashboard');
+    var stream = document.getElementById('ccStream');
+    var input = document.getElementById('ccInput');
+    var sendBtn = document.getElementById('ccSend');
+    function add(text, who) { var d = document.createElement('div'); d.className = 'cc-msg ' + who; d.textContent = text; stream.appendChild(d); stream.scrollTop = stream.scrollHeight; return d; }
+    function ask(q) {
+      q = (q || '').trim(); if (!q) return;
+      add(q, 'me'); input.value = '';
+      if (sendBtn) sendBtn.disabled = true;
+      var thinking = add('…', 'bot thinking');
+      Promise.resolve(V.askConcierge ? V.askConcierge(q) : Promise.reject(new Error('unavailable'))).then(function (ans) {
+        thinking.remove();
+        add(ans || 'I do not have an answer for that. Please contact access@minervaluxurymotors.com.', 'bot');
+      }).catch(function (e) {
+        thinking.remove();
+        var m = (e && e.message === 'concierge-not-configured') ? 'The concierge is not configured yet — a model key still needs to be set.' : 'Sorry, I could not reach the concierge just now.';
+        add(m, 'bot');
+      }).then(function () { if (sendBtn) sendBtn.disabled = false; input.focus(); });
+    }
+    document.getElementById('ccForm').addEventListener('submit', function () { ask(input.value); });
+    [].forEach.call(root.querySelectorAll('[data-q]'), function (b) { b.addEventListener('click', function () { ask(b.getAttribute('data-q')); }); });
+    input.focus();
   }
 
   function bindBack(hash) {

@@ -351,6 +351,12 @@
       });
     }
 
+    // Minerva Concierge — role-gated AI help. The function resolves the caller's
+    // role server-side and only feeds the model what that role may see.
+    function askConcierge(question) {
+      return callFn('concierge', { question: question }, true).then(function (r) { return (r && r.answer) || ''; });
+    }
+
     var _profile = null;       // { id, name, email, is_admin, tier, status, membership_end }
     var _membersCount = null;  // heritage members count (admin tile)
 
@@ -498,7 +504,7 @@
       getModels: getModels, setModels: setModels, addModel: addModel,
       getCoa: getCoa, setCoa: setCoa, addCoa: addCoa,
       isHeritage: isHeritage, memberTier: memberTier, memberPending: memberPending,
-      heritageMembers: heritageMembers,
+      heritageMembers: heritageMembers, askConcierge: askConcierge,
       getArchives: getArchives, setArchives: setArchives,
       getNews: getNews, setNews: setNews,
       getCounters: getCounters, setCounter: setCounter,
