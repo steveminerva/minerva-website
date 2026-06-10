@@ -12,6 +12,7 @@
   .login-error { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--minerva-red-bright); text-align: center; min-height: 14px; margin-top: 2px; }
   .login-ok { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--platinum-bright); text-align: center; min-height: 14px; margin-top: 2px; }
   /* Heritage self-registration */
+  [hidden] { display: none !important; }   /* .login-card sets display:flex, which otherwise overrides the hidden attribute */
   .reg-link { display:block; margin:14px auto 0; background:none; border:0; color:var(--platinum-deep); font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; cursor:pointer; }
   .reg-link:hover { color:var(--platinum-bright); }
   .reg-seg { display:flex; gap:8px; }
