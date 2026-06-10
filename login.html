@@ -11,6 +11,18 @@
 <style>
   .login-error { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--minerva-red-bright); text-align: center; min-height: 14px; margin-top: 2px; }
   .login-ok { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--platinum-bright); text-align: center; min-height: 14px; margin-top: 2px; }
+  /* Heritage self-registration */
+  .reg-link { display:block; margin:14px auto 0; background:none; border:0; color:var(--platinum-deep); font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; cursor:pointer; }
+  .reg-link:hover { color:var(--platinum-bright); }
+  .reg-seg { display:flex; gap:8px; }
+  .reg-seg button { flex:1; padding:12px 0; background:#0a0b0d; border:1px solid var(--line); color:var(--fg-dim); font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; transition:border-color .25s,color .25s; }
+  .reg-seg button.on { border-color:var(--platinum-deep); color:var(--fg); background:#0d0e11; }
+  .reg-hint { font-size:11px; color:var(--mute); margin-top:6px; }
+  .reg-tier { font-weight:300; font-size:.95rem; color:var(--fg-dim); margin:6px 0 2px; text-align:center; }
+  .reg-tier b { color:var(--platinum-bright); font-weight:500; }
+  .reg-ok { text-align:center; padding:10px 0; }
+  .reg-ok .ro-h { font-size:clamp(1.3rem,3vw,1.9rem); letter-spacing:.03em; margin-bottom:12px; }
+  .reg-ok .ro-b { font-weight:300; color:var(--fg-dim); line-height:1.65; max-width:40ch; margin:0 auto 18px; }
 </style>
 </head>
 <body class="inner">
@@ -72,6 +84,26 @@
       <p class="login-error" id="loginError" role="alert"></p>
       <button class="btn" type="submit" id="loginBtn" data-i18n="login.enter">Enter</button>
     </form>
+    <button class="reg-link" type="button" id="toRegister">New here? Apply for Heritage membership</button>
+
+    <form class="login-card" id="registerCard" autocomplete="off" onsubmit="return false;" hidden>
+      <div class="field"><label for="rName">Full name</label><input id="rName" type="text" placeholder="Your name" autocomplete="name"></div>
+      <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="field"><label for="rPw">Choose a password</label><input id="rPw" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <div class="field"><label>Do you own a Minerva?</label><div class="reg-seg" id="qOwn"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
+      <div class="field"><label>An outstanding new-vehicle commission?</label><div class="reg-seg" id="qComm"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
+      <div class="field" id="rVinBlock" hidden><label for="rVin">Vehicle VIN</label><input id="rVin" type="text" placeholder="The VIN of your Minerva"><p class="reg-hint">Minerva will verify this against the register.</p></div>
+      <p class="reg-tier" id="rTier">You will join as an <b>Admirer</b>.</p>
+      <p class="login-error" id="registerError" role="alert"></p>
+      <button class="btn" type="submit" id="registerBtn">Apply for membership</button>
+      <button class="reg-link" type="button" id="toLogin">← Back to sign in</button>
+    </form>
+
+    <div class="login-card reg-ok" id="registerDone" hidden>
+      <p class="ro-h" id="regDoneH"></p>
+      <p class="ro-b" id="regDoneB"></p>
+      <button class="btn" type="button" id="regDoneBtn">Back to sign in</button>
+    </div>
   </main>
 
   <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
@@ -166,6 +198,92 @@
 
         handleInviteThenLogin();
       });
+    })();
+  </script>
+
+  <!-- Heritage self-registration (calls the hardened public heritage-register function directly) -->
+  <script>
+    (function () {
+      function curLang() { try { return (window.MinervaI18n && window.MinervaI18n.lang) || 'en'; } catch (e) { return 'en'; } }
+      var loginCard = document.getElementById('loginForm');
+      var regCard = document.getElementById('registerCard');
+      var doneCard = document.getElementById('registerDone');
+      if (!regCard) return;
+      var own = 'no', comm = 'no';
+      var TLABEL = { admirer: 'Admirer', custodian: 'Custodian', commissioner: 'Commissioner' };
+
+      function show(which) {
+        loginCard.hidden = which !== 'login';
+        regCard.hidden = which !== 'reg';
+        doneCard.hidden = which !== 'done';
+        var tr = document.getElementById('toRegister'); if (tr) tr.hidden = which !== 'login';
+        try { window.scrollTo(0, 0); } catch (e) {}
+      }
+      function tier() { return comm === 'yes' ? 'commissioner' : (own === 'yes' ? 'custodian' : 'admirer'); }
+      function syncTier() {
+        var t = tier();
+        var el = document.getElementById('rTier');
+        if (el) el.innerHTML = 'You will join as ' + (t === 'admirer' ? 'an' : 'a') + ' <b>' + TLABEL[t] + '</b>.';
+        var vin = document.getElementById('rVinBlock'); if (vin) vin.hidden = (t === 'admirer');
+      }
+      function seg(id, set) {
+        var box = document.getElementById(id); if (!box) return;
+        [].forEach.call(box.querySelectorAll('button'), function (b) {
+          b.addEventListener('click', function () {
+            [].forEach.call(box.querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+            b.classList.add('on'); set(b.getAttribute('data-v')); syncTier();
+          });
+        });
+      }
+      seg('qOwn', function (v) { own = v; });
+      seg('qComm', function (v) { comm = v; });
+
+      var tReg = document.getElementById('toRegister'); if (tReg) tReg.addEventListener('click', function () { show('reg'); });
+      var tLog = document.getElementById('toLogin'); if (tLog) tLog.addEventListener('click', function () { show('login'); });
+      var dn = document.getElementById('regDoneBtn'); if (dn) dn.addEventListener('click', function () { show('login'); });
+
+      var btn = document.getElementById('registerBtn');
+      function register() {
+        var err = document.getElementById('registerError'); err.textContent = '';
+        var name = (document.getElementById('rName').value || '').trim();
+        var email = (document.getElementById('rEmail').value || '').trim();
+        var pw = document.getElementById('rPw').value || '';
+        var vin = (document.getElementById('rVin').value || '').trim();
+        var t = tier();
+        if (!name) { err.textContent = 'Please enter your name'; return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Please enter a valid email'; return; }
+        if (pw.length < 8) { err.textContent = 'Password must be at least 8 characters'; return; }
+        if (t !== 'admirer' && !vin) { err.textContent = 'Please enter your vehicle VIN'; return; }
+        var CFG = window.MINERVA_SUPABASE || {};
+        if (!CFG.url || !CFG.anonKey) { err.textContent = 'Service unavailable — please try again in a moment'; return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+        fetch(CFG.url + '/functions/v1/heritage-register', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'apikey': CFG.anonKey, 'authorization': 'Bearer ' + CFG.anonKey },
+          body: JSON.stringify({ name: name, email: email, password: pw, ownsMinerva: own === 'yes', hasCommission: comm === 'yes', vin: vin || null, lang: curLang() })
+        }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
+          .then(function (res) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Apply for membership'; }
+            if (!res.ok || (res.b && res.b.error)) {
+              var e = res.b && res.b.error;
+              err.textContent = e === 'email-taken' ? 'That email is already registered — please sign in instead.'
+                : e === 'vin-required' ? 'Please enter your vehicle VIN'
+                : e === 'password-weak' ? 'Password must be at least 8 characters'
+                : 'We could not complete your application. Please try again.';
+              return;
+            }
+            var active = res.b && res.b.status === 'active';
+            document.getElementById('regDoneH').textContent = active ? 'Welcome to Minerva' : 'Application received';
+            document.getElementById('regDoneB').textContent = active
+              ? 'Your Admirer membership is active. You can now sign in to the Heritage portal.'
+              : ('Thank you, ' + name + '. Minerva will review your ' + TLABEL[t] + ' application and confirm by email. You may sign in once approved.');
+            show('done');
+          }).catch(function () {
+            if (btn) { btn.disabled = false; btn.textContent = 'Apply for membership'; }
+            err.textContent = 'We could not complete your application. Please try again.';
+          });
+      }
+      if (btn) btn.addEventListener('click', register);
     })();
   </script>
 </body>

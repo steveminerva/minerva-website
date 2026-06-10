@@ -203,8 +203,17 @@
 
     /* ----- account: topbar chip / profile page / console language ----- */
     function account() {
+      // Heritage member session -> member identity (drives the member portal view).
+      if (_profile && _profile.tier && !_profile.is_admin) {
+        return {
+          id: _profile.id, name: _profile.name || 'Member',
+          email: _profile.email || _sessionEmail, role: 'heritage',
+          tier: _profile.tier, status: _profile.status,
+          endDate: _profile.membership_end || null, lang: 'en', super: false
+        };
+      }
       return {
-        id: null,
+        id: (_profile && _profile.id) || null,
         name: _isSuper ? 'Super-admin' : 'Admin',
         email: _sessionEmail || SUPER_ADMIN_EMAIL,
         role: 'admin', endDate: null, lang: 'en', super: _isSuper
@@ -315,18 +324,147 @@
       });
     }
 
+    /* ==================================================================
+       HERITAGE (Phase 3) — member role resolution + member portal stores.
+       Role comes from the signed-in user's profile (server truth via RLS),
+       never the client. Registration + approve/deny run through the hardened
+       edge functions. Archives & news are Supabase sync caches (vehicles
+       pattern), RLS-gated to the member's tier.
+       ================================================================== */
+    var FN_BASE = ((window.MINERVA_SUPABASE || {}).url || '') + '/functions/v1/';
+    var ANON = (window.MINERVA_SUPABASE || {}).anonKey || '';
+
+    // Call an Edge Function. auth=true attaches the signed-in user's JWT.
+    function callFn(name, payload, auth) {
+      return (auth && _sb ? _sb.auth.getSession() : Promise.resolve(null)).then(function (r) {
+        var token = (r && r.data && r.data.session && r.data.session.access_token) || ANON;
+        return fetch(FN_BASE + name, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'apikey': ANON, 'authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload || {})
+        });
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok || (body && body.error)) throw new Error((body && body.error) || ('http-' + res.status));
+          return body;
+        });
+      });
+    }
+
+    var _profile = null;       // { id, name, email, is_admin, tier, status, membership_end }
+    var _membersCount = null;  // heritage members count (admin tile)
+
+    function refreshProfile() {
+      if (!_db) return Promise.resolve(null);
+      return _db.auth.getSession().then(function (r) {
+        var u = r && r.data && r.data.session ? r.data.session.user : null;
+        if (!u) { _profile = null; return null; }
+        return _db.from('profiles').select('id,name,email,is_admin,tier,status,membership_end').eq('id', u.id).single()
+          .then(function (res) { _profile = (res && res.data) || null; repaint(); return _profile; });
+      }).catch(function () { return null; });
+    }
+    function refreshMembers() {
+      if (!_db) return Promise.resolve(_membersCount);
+      return _db.from('profiles').select('id', { count: 'exact', head: true }).not('tier', 'is', null)
+        .then(function (res) { if (res && typeof res.count === 'number') { _membersCount = res.count; repaint(); } return _membersCount; })
+        .catch(function () { return _membersCount; });
+    }
+
+    function isHeritage()    { return !!(_profile && _profile.tier && !_profile.is_admin); }
+    function memberTier()    { return _profile ? (_profile.tier || null) : null; }
+    function memberPending() { return !!(_profile && _profile.status === 'pending'); }
+    function getMembersCount() { return _membersCount; }
+
+    /* ----- ARCHIVES (member documents; file bytes -> Storage later) ----- */
+    var _archives = [];
+    function mapArchiveRow(a) {
+      return { id: a.id, title: a.title || '', year: (a.year != null ? a.year : ''), category: a.category || '',
+               visibility: a.visibility || 'private', desc: a.description || '', fileName: a.file_name || '',
+               thumb: a.thumb || '', by: a.owner || '', ts: a.created_at ? Date.parse(a.created_at) : 0, owner: a.owner || null };
+    }
+    function refreshArchives() {
+      if (!_db) return Promise.resolve(_archives);
+      return _db.from('archives').select('*').order('created_at', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _archives = res.data.map(mapArchiveRow); repaint(); } return _archives; })
+        .catch(function () { return _archives; });
+    }
+    function getArchives() { return _archives.slice(); }
+    // Whole-list setter (admin-app pattern): insert new (no id), delete removed, update visibility.
+    function setArchives(list) {
+      if (!_db) return;
+      list = Array.isArray(list) ? list : [];
+      var byId = {}; _archives.forEach(function (a) { if (a.id) byId[a.id] = a; });
+      var seen = {}, ops = [];
+      list.forEach(function (a) {
+        if (a && a.id) {
+          seen[a.id] = 1;
+          var prev = byId[a.id];
+          if (prev && prev.visibility !== a.visibility) ops.push(_db.from('archives').update({ visibility: a.visibility }).eq('id', a.id));
+        } else if (a) {
+          ops.push(_db.from('archives').insert({
+            owner: (_profile && _profile.id) || null, title: a.title || null,
+            year: (a.year ? parseInt(a.year, 10) : null), category: a.category || null,
+            visibility: a.visibility || 'private', description: a.desc || a.description || null,
+            file_name: a.fileName || null, thumb: a.thumb || null
+          }));
+        }
+      });
+      _archives.forEach(function (a) { if (a.id && !seen[a.id]) ops.push(_db.from('archives').delete().eq('id', a.id)); });
+      Promise.all(ops).then(function () { refreshArchives(); }).catch(function () { refreshArchives(); });
+    }
+
+    /* ----- NEWS (admin-authored; members read published rows for their tier) ----- */
+    var _news = [];
+    function mapNewsRow(n) {
+      return { id: n.id, title: n.title || '', date: n.date || '', status: n.status || 'draft',
+               audience: n.audience || 'all', body: n.body || '' };
+    }
+    function refreshNews() {
+      if (!_db) return Promise.resolve(_news);
+      return _db.from('news').select('*').order('date', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _news = res.data.map(mapNewsRow); repaint(); } return _news; })
+        .catch(function () { return _news; });
+    }
+    function getNews() { return _news.slice(); }
+    function setNews(list) {
+      if (!_db) return;
+      list = Array.isArray(list) ? list : [];
+      var byId = {}; _news.forEach(function (n) { if (n.id) byId[n.id] = n; });
+      var seen = {}, ops = [];
+      list.forEach(function (n) {
+        if (n && n.id) {
+          seen[n.id] = 1;
+          var p = byId[n.id];
+          if (p && (p.title !== n.title || p.date !== n.date || p.status !== n.status || p.audience !== n.audience || p.body !== n.body))
+            ops.push(_db.from('news').update({ title: n.title, date: n.date || null, status: n.status, audience: n.audience, body: n.body }).eq('id', n.id));
+        } else if (n) {
+          ops.push(_db.from('news').insert({ title: n.title || null, date: n.date || null, status: n.status || 'draft', audience: n.audience || 'all', body: n.body || null }));
+        }
+      });
+      _news.forEach(function (n) { if (n.id && !seen[n.id]) ops.push(_db.from('news').delete().eq('id', n.id)); });
+      Promise.all(ops).then(function () { refreshNews(); }).catch(function () { refreshNews(); });
+    }
+
+    // member-store methods used by login.html (register) and the decision UI
+    bridgeStore.registerMember = function (name, email, pw, tier, vin, lang) {
+      var owns = tier === 'custodian', comm = tier === 'commissioner';
+      return callFn('heritage-register', { name: name, email: email, password: pw, ownsMinerva: owns, hasCommission: comm, vin: vin || null, lang: lang || 'en' }, false);
+    };
+    bridgeStore.approveMember = function (id, comment, tier) { return callFn('heritage-decision', { userId: id, action: 'accept', comment: comment || '', tier: tier || null }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
+    bridgeStore.denyMember = function (id, comment) { return callFn('heritage-decision', { userId: id, action: 'deny', comment: comment || '' }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
+    bridgeStore.renewMember = function (id) { return callFn('heritage-decision', { userId: id, action: 'accept' }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
+
     // Wait for the shared session to be recovered before the first read, so the very
     // first query is authenticated (avoids a transient anonymous read returning nothing).
     if (_db) {
       _db.auth.getSession()
-        .then(function () { refreshVehicles(); refreshModels(); refreshCoa(); })
+        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); })
         .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
     } else {
       refreshVehicles(); refreshModels(); refreshCoa();
     }
 
-    /* ----- still-not-wired sections (Phase 3/4): safe stubs (never throw) ----- */
-    function getMembersCount() { return null; }   // -> "Coming soon" tile (Phase 3)
+    /* ----- still-not-wired sections (Phase 4): safe stubs (never throw) ----- */
     function getCounters() { return {}; }
     function setCounter() {}
     function auditEvents() { return []; }
@@ -345,6 +483,9 @@
       getVehicles: getVehicles, setVehicles: setVehicles, addVehicle: addVehicle,
       getModels: getModels, setModels: setModels, addModel: addModel,
       getCoa: getCoa, setCoa: setCoa, addCoa: addCoa,
+      isHeritage: isHeritage, memberTier: memberTier, memberPending: memberPending,
+      getArchives: getArchives, setArchives: setArchives,
+      getNews: getNews, setNews: setNews,
       getCounters: getCounters, setCounter: setCounter,
       auditEvents: auditEvents,
       logActivity: logActivity,
