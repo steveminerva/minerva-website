@@ -365,8 +365,11 @@
       + '.imp-bar strong{color:#fff;font-weight:600;}'
       + '.imp-bar button{background:transparent;border:1px solid rgba(255,255,255,.6);color:#fff;font:inherit;padding:5px 12px;cursor:pointer;letter-spacing:.14em;}'
       + '.imp-bar button:hover{background:rgba(255,255,255,.12);}'
-      + 'body.has-imp{padding-top:34px;}'
-      + 'body.has-imp.has-vip .vip-banner{top:calc(var(--cookie-h,0px) + 34px);}'
+      + 'body.has-imp{padding-top:var(--imp-h,40px);}'
+      + 'body.has-imp.has-vip{padding-top:calc(var(--cookie-h,0px) + var(--vip-h,0px) + var(--imp-h,40px));}'
+      + 'body.has-imp .vip-banner{top:calc(var(--cookie-h,0px) + var(--imp-h,40px));}'
+      + 'body.has-imp .vip-reopen{top:calc(var(--cookie-h,0px) + var(--imp-h,40px));}'
+      + 'body.has-imp .top{top:calc(var(--cookie-h,0px) + var(--vip-h,0px) + var(--imp-h,40px));}'
       + '.vip-banner-inner{max-width:1640px;margin:0 auto;padding:10px var(--pad);'
       +   'display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;}'
       + '.vip-dot{width:6px;height:6px;border-radius:50%;background:var(--platinum-bright);'
@@ -559,6 +562,11 @@
       + '<button type="button" data-imp-exit>' + esc(T('app.imp.exit', 'Back to super-admin')) + '</button>';
     document.body.appendChild(bar);
     document.body.classList.add('has-imp');
+    // Feed the real bar height to CSS so every role banner (VIP / admin / heritage /
+    // expired) and the collapsed re-open tab sit fully below it, even when it wraps.
+    function syncImpH() { try { document.documentElement.style.setProperty('--imp-h', bar.offsetHeight + 'px'); } catch (e) {} }
+    syncImpH(); setTimeout(syncImpH, 60);
+    window.addEventListener('resize', syncImpH, { passive: true });
     bar.querySelector('[data-imp-exit]').addEventListener('click', function () { clearImpersonation(); location.reload(); });
   }
 

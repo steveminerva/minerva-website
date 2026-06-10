@@ -552,6 +552,17 @@
       +       '<button class="btn" type="submit" id="extBtn">Execute</button>'
       +     '</form>'
       +     '<p class="adm-okmsg" id="extMsg" style="margin-top:14px;"></p>'))
+      +   ((V.isSuperAdmin && V.isSuperAdmin()) ? (''
+      +     '<p class="adm-section-h">Change account type</p>'
+      +     '<form class="adm-extend" id="roleForm" onsubmit="return false;">'
+      +       '<div class="ff" style="flex:1;min-width:200px;"><label for="roleSel">New role</label>'
+      +         '<div class="ff-input"><select id="roleSel" class="ff-select"><option value="vip">VIP guest</option><option value="admin">Admin</option><option value="heritage">Heritage member</option></select></div></div>'
+      +       '<div class="ff" id="roleTierBlock" style="flex:0 0 auto;display:none;"><label for="roleTier">Tier</label>'
+      +         '<div class="ff-input"><select id="roleTier" class="ff-select"><option value="admirer">Admirer</option><option value="custodian">Custodian</option><option value="commissioner">Commissioner</option></select></div></div>'
+      +       '<button class="btn" type="submit" id="roleBtn">Change role</button>'
+      +     '</form>'
+      +     '<p class="field-hint" style="margin:-4px 0 6px;">VIP → 3-month access · Heritage → active 12-month member · Admin → full console access.</p>'
+      +     '<p class="adm-okmsg" id="roleMsg" style="margin-top:8px;"></p>') : '')
       +   '<p class="adm-section-h">' + (isAdminUser ? 'Remove admin' : 'Cancel access') + '</p>'
       +   (cancelled
            ? '<p class="adm-okmsg" style="color:var(--minerva-red-bright);">Access cancelled on ' + esc(V.fmtDateTime(u.cancelled)) + '</p>'
@@ -601,6 +612,38 @@
       }
       f.addEventListener('submit', go);
       document.getElementById('extBtn').addEventListener('click', go);
+    }
+
+    var roleForm = document.getElementById('roleForm');
+    if (roleForm) {
+      var roleSel = document.getElementById('roleSel');
+      var roleTierBlock = document.getElementById('roleTierBlock');
+      var roleMsg = document.getElementById('roleMsg');
+      var roleBtn = document.getElementById('roleBtn');
+      roleSel.value = (role === 'admin') ? 'admin' : 'vip';
+      function syncRoleTier() { roleTierBlock.style.display = roleSel.value === 'heritage' ? '' : 'none'; }
+      syncRoleTier();
+      roleSel.addEventListener('change', syncRoleTier);
+      function goRole() {
+        var newRole = roleSel.value;
+        var tier = newRole === 'heritage' ? document.getElementById('roleTier').value : null;
+        if (newRole === 'admin' && !confirm('Grant full console access to ' + u.name + '? They will become an administrator.')) return;
+        roleMsg.style.color = ''; roleMsg.textContent = 'Updating…'; if (roleBtn) roleBtn.disabled = true;
+        Promise.resolve(V.store.setUserRole(u.id, newRole, tier)).then(function () {
+          roleMsg.textContent = 'Account type changed.';
+          if (V.logActivity) V.logActivity('role-changed', u.name + ' → ' + newRole);
+          setTimeout(function () { render(); }, 1000);
+        }).catch(function (e) {
+          if (roleBtn) roleBtn.disabled = false;
+          roleMsg.style.color = 'var(--minerva-red-bright)';
+          roleMsg.textContent = (e && e.message === 'cannot-change-super') ? 'The super-admin account cannot be changed.'
+            : (e && e.message === 'super-only') ? 'Only the super-admin can change account types.'
+            : (e && e.message === 'cannot-change-self') ? 'You cannot change your own account.'
+            : 'Could not change the account type. Please try again.';
+        });
+      }
+      roleForm.addEventListener('submit', goRole);
+      roleBtn.addEventListener('click', goRole);
     }
   }
 
