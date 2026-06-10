@@ -9,77 +9,165 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/minerva.css">
 <style>
-  .pt-wrap { max-width: 760px; margin: 0 auto; padding: 6vh 0 4vh; text-align: center; }
+  .pt-wrap { max-width: 980px; margin: 0 auto; padding: 5vh 0 6vh; }
+  .pt-center { text-align: center; max-width: 760px; margin: 0 auto; }
   .pt-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--platinum-deep); }
-  .pt-title { font-size: clamp(1.8rem,5vw,3.2rem); letter-spacing: .03em; margin: 14px 0 18px; }
-  .pt-body { font-weight: 300; color: var(--fg-dim); line-height: 1.7; max-width: 46ch; margin: 0 auto 26px; }
-  .pt-tier { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--platinum-bright); border:1px solid rgba(184,188,194,.45); padding:6px 12px; margin-bottom:18px; }
-  .pt-steps { display:flex; justify-content:center; gap:0; margin:28px auto; max-width:420px; }
+  .pt-title { font-size: clamp(1.7rem,5vw,3rem); letter-spacing: .03em; margin: 12px 0 14px; }
+  .pt-body { font-weight: 300; color: var(--fg-dim); line-height: 1.7; max-width: 46ch; margin: 0 auto 22px; }
+  .pt-tier { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--platinum-bright); border:1px solid rgba(184,188,194,.45); padding:6px 12px; }
+  .pt-steps { display:flex; justify-content:center; margin:26px auto; max-width:420px; }
   .pt-step { flex:1; position:relative; font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); padding-top:22px; }
   .pt-step::before { content:''; position:absolute; top:5px; left:50%; transform:translateX(-50%); width:11px; height:11px; border-radius:50%; background:#0a0b0d; border:1px solid var(--line); }
-  .pt-step.on { color:var(--fg-dim); }
-  .pt-step.on::before { background:var(--platinum-bright); border-color:var(--platinum-bright); }
+  .pt-step.on { color:var(--fg-dim); } .pt-step.on::before { background:var(--platinum-bright); border-color:var(--platinum-bright); }
   .pt-loading { text-align:center; padding:16vh 0; color:var(--mute); font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; }
+  /* member portal */
+  .pt-head { display:flex; justify-content:space-between; align-items:baseline; gap:14px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:18px; }
+  .pt-hi h1 { font-size:clamp(1.5rem,4vw,2.3rem); letter-spacing:.03em; margin:0; }
+  .pt-hi p { color:var(--fg-dim); font-size:13px; margin:6px 0 0; }
+  .pt-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; }
+  .pt-tab { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--fg-dim); background:#0a0b0d; border:1px solid var(--line); padding:10px 16px; cursor:pointer; }
+  .pt-tab.on { border-color:var(--platinum-deep); color:var(--fg); background:#0d0e11; }
+  .pt-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+  .pt-card { border:1px solid var(--line); background:linear-gradient(180deg,#070809,#050506); padding:16px; }
+  .pt-card h3 { margin:0 0 4px; font-size:15px; font-weight:500; }
+  .pt-card .meta { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--platinum-deep); }
+  .pt-card .desc { color:var(--fg-dim); font-size:13px; line-height:1.55; margin:8px 0 0; }
+  .pt-badge { display:inline-block; font-family:var(--mono); font-size:8.5px; letter-spacing:.12em; text-transform:uppercase; padding:2px 7px; border:1px solid var(--line); color:var(--fg-dim); margin-left:6px; }
+  .pt-badge.pub { color:#3fb27f; border-color:#3fb27f55; } .pt-badge.inv { color:#c2a15a; border-color:#c2a15a55; }
+  .pt-row { display:grid; grid-template-columns:1.1fr 1fr 0.8fr 0.8fr; gap:10px; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .pt-row.head { font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--platinum-deep); }
+  .pt-empty { color:var(--mute); font-style:italic; padding:24px 0; }
+  .pt-sec-h { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--platinum-deep); margin:6px 0 12px; }
+  @media (max-width:560px){ .pt-row{ grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 <body class="inner">
-  <header class="top">
-    <a class="brand-mini" href="index.html">MINERVA</a>
-  </header>
+  <header class="top"><a class="brand-mini" href="index.html">MINERVA</a></header>
   <main class="page" data-screen-label="Portal">
     <div id="ptLoading" class="pt-loading">Loading…</div>
-    <div id="ptContent" class="pt-wrap" hidden></div>
+    <div id="ptContent" hidden></div>
   </main>
 
   <script src="assets/i18n.js"></script>
   <script src="assets/minerva.js"></script>
   <script>
-  /* Lean, secure Heritage portal landing. The engine (vip.js) resolves the role
-     from the signed-in Supabase session; this page only renders. Full member
-     screens (archive / vehicles / news) and the admin console arrive next. */
+  /* Secure Heritage portal. The engine (vip.js) resolves the role from the
+     Supabase session; member data is read here with the member's own session,
+     so RLS limits it to public + own archives, their tier's news, the catalogue,
+     and their own vehicle. No privileged data is ever exposed client-side. */
   (function () {
     function T(k, fb) { try { var v = window.MinervaI18n && window.MinervaI18n.t(k, window.MinervaI18n.lang); return v != null ? v : fb; } catch (e) { return fb; } }
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function ready(fn) { if (window.MinervaVIP) { (window.MinervaVIP.ready ? window.MinervaVIP.ready(fn) : fn()); return; } var t = setInterval(function () { if (window.MinervaVIP) { clearInterval(t); ready(fn); } }, 40); }
+    var TIER = { admirer: 'Admirer', custodian: 'Custodian', commissioner: 'Commissioner' };
 
     ready(function () {
       var V = window.MinervaVIP;
       var loading = document.getElementById('ptLoading');
       var content = document.getElementById('ptContent');
-      function show(html) { content.innerHTML = html; loading.hidden = true; content.hidden = false; }
+      function show() { loading.hidden = true; content.hidden = false; }
 
-      // Route by role (server-resolved). Not a member -> send elsewhere.
       if (!V.isAdmin() && !(V.isHeritage && V.isHeritage()) && !V.currentVip()) { location.replace('login.html'); return; }
-      if (V.isAdmin()) { location.replace('admin.html'); return; }            // staff -> console
-      if (!(V.isHeritage && V.isHeritage())) { location.replace('index.html'); return; } // VIP -> website
+      if (V.isAdmin()) { location.replace('admin.html'); return; }
+      if (!(V.isHeritage && V.isHeritage())) { location.replace('index.html'); return; }
 
       var tier = (V.memberTier && V.memberTier()) || 'admirer';
-      var tierTxt = T('app.tier.' + tier, tier.charAt(0).toUpperCase() + tier.slice(1));
+      var tierTxt = T('app.tier.' + tier, TIER[tier] || tier);
+      var acc = V.account ? V.account() : {};
 
+      /* ---- pending applicants: the under-review wall ---- */
       if (V.memberPending && V.memberPending()) {
-        show(
-          '<p class="pt-eyebrow">' + esc(T('app.member.byInvite', 'By private invitation')) + '</p>'
+        content.className = 'pt-wrap';
+        content.innerHTML =
+          '<div class="pt-center"><p class="pt-eyebrow">' + esc(T('app.member.byInvite', 'By private invitation')) + '</p>'
           + '<h1 class="pt-title">' + esc(T('app.member.reviewTitle', 'Your membership is under review')) + '</h1>'
           + '<span class="pt-tier">' + esc(tierTxt) + '</span>'
           + '<p class="pt-body">' + esc(T('app.member.reviewBody', 'Thank you. Our atelier is verifying your details. The archive, your vehicles and member news will open to you the moment your membership is confirmed by email.')) + '</p>'
-          + '<div class="pt-steps">'
-          +   '<div class="pt-step on">' + esc(T('app.member.step1', 'Received')) + '</div>'
-          +   '<div class="pt-step on">' + esc(T('app.member.step2', 'In review')) + '</div>'
-          +   '<div class="pt-step">' + esc(T('app.member.step3', 'Confirmed')) + '</div>'
-          + '</div>'
-          + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a>'
-        );
+          + '<div class="pt-steps"><div class="pt-step on">' + esc(T('app.member.step1', 'Received')) + '</div><div class="pt-step on">' + esc(T('app.member.step2', 'In review')) + '</div><div class="pt-step">' + esc(T('app.member.step3', 'Confirmed')) + '</div></div>'
+          + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a></div>';
+        show();
         return;
       }
 
-      // Active member -> portal landing (full screens arrive in the next increment).
-      show(
-        '<p class="pt-eyebrow">' + esc(T('app.member.welcomeEyebrow', 'Heritage circle')) + '</p>'
-        + '<h1 class="pt-title">' + esc(T('app.member.welcomeTitle', 'Welcome to the Heritage portal')) + '</h1>'
-        + '<span class="pt-tier">' + esc(tierTxt) + '</span>'
-        + '<p class="pt-body">' + esc(T('app.member.welcomeBody', 'Your membership is active. The archive, your vehicles and member news are being prepared and will appear here shortly.')) + '</p>'
-        + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a>'
-      );
+      /* ---- active members: the portal ---- */
+      var CFG = window.MINERVA_SUPABASE || {};
+      var pdb = window.supabase.createClient(CFG.url, CFG.anonKey, { auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } });
+      var tab = 'archive';
+      content.className = 'pt-wrap';
+
+      function shell(inner) {
+        content.innerHTML =
+          '<div class="pt-head"><div class="pt-hi"><h1>' + esc(T('app.member.portalTitle', 'Heritage Portal')) + '</h1>'
+          + '<p>' + esc((acc && acc.name) || 'Member') + ' · ' + esc(tierTxt) + (acc && acc.endDate ? ' · ' + esc(T('app.member.renews', 'renews')) + ' ' + esc(V.fmtDate(acc.endDate)) : '') + '</p></div>'
+          + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a></div>'
+          + '<div class="pt-tabs">'
+          +   '<button class="pt-tab' + (tab === 'archive' ? ' on' : '') + '" data-tab="archive">' + esc(T('app.member.tabArchive', 'Heritage')) + '</button>'
+          +   '<button class="pt-tab' + (tab === 'vehicles' ? ' on' : '') + '" data-tab="vehicles">' + esc(T('app.member.tabVehicles', 'Vehicles')) + '</button>'
+          +   '<button class="pt-tab' + (tab === 'news' ? ' on' : '') + '" data-tab="news">' + esc(T('app.member.tabNews', 'News')) + '</button>'
+          + '</div><div id="ptTab">' + inner + '</div>';
+        [].forEach.call(content.querySelectorAll('[data-tab]'), function (b) {
+          b.addEventListener('click', function () { tab = b.getAttribute('data-tab'); route(); });
+        });
+        show();
+      }
+      function loadingTab() { return '<p class="pt-empty">' + esc(T('app.member.loading', 'Loading…')) + '</p>'; }
+      function setTab(html) { var el = document.getElementById('ptTab'); if (el) el.innerHTML = html; }
+
+      function route() {
+        shell(loadingTab());
+        if (tab === 'archive') loadArchive();
+        else if (tab === 'vehicles') loadVehicles();
+        else loadNews();
+      }
+
+      function loadArchive() {
+        pdb.from('archives').select('*').order('created_at', { ascending: false }).then(function (res) {
+          var rows = (res && res.data) || [];
+          if (!rows.length) { setTab('<p class="pt-sec-h">' + esc(T('app.member.archive', 'The Archive')) + '</p><p class="pt-empty">' + esc(T('app.member.archiveEmpty', 'No documents yet. Public records and your own contributions will appear here.')) + '</p>'); return; }
+          setTab('<p class="pt-sec-h">' + esc(T('app.member.archive', 'The Archive')) + '</p><div class="pt-grid">' + rows.map(function (a) {
+            var pub = a.visibility === 'public';
+            return '<div class="pt-card"><h3>' + esc(a.title || '—') + (pub ? '<span class="pt-badge pub">' + esc(T('app.member.public', 'Public')) + '</span>' : '') + '</h3>'
+              + '<span class="meta">' + esc(a.category || '') + (a.year ? ' · ' + esc(a.year) : '') + '</span>'
+              + (a.description ? '<p class="desc">' + esc(a.description) + '</p>' : '') + '</div>';
+          }).join('') + '</div>');
+        }).catch(function () { setTab('<p class="pt-empty">' + esc(T('app.member.loadErr', 'Could not load. Please refresh.')) + '</p>'); });
+      }
+
+      function loadVehicles() {
+        Promise.all([
+          pdb.from('vehicles').select('*'),
+          pdb.from('vehicle_models').select('*').order('launch', { ascending: false })
+        ]).then(function (r) {
+          var mine = (r[0] && r[0].data) || [];
+          var models = (r[1] && r[1].data) || [];
+          var html = '<p class="pt-sec-h">' + esc(T('app.member.yourVehicles', 'Your Minerva')) + '</p>';
+          if (!mine.length) html += '<p class="pt-empty">' + esc(T('app.member.noVehicle', 'No Minerva is linked to your membership yet.')) + '</p>';
+          else html += '<div class="pt-grid">' + mine.map(function (v) {
+            return '<div class="pt-card"><h3>' + esc(v.model || '—') + '</h3><span class="meta">VIN ' + esc(v.vin || '—') + (v.model_date ? ' · ' + esc(v.model_date) : '') + '</span></div>';
+          }).join('') + '</div>';
+          html += '<p class="pt-sec-h" style="margin-top:26px;">' + esc(T('app.member.catalogue', 'Model catalogue')) + '</p>';
+          html += '<div class="pt-row head"><span>' + esc(T('app.member.model', 'Model')) + '</span><span>' + esc(T('app.member.line', 'Line')) + '</span><span>' + esc(T('app.member.year', 'Year')) + '</span><span>' + esc(T('app.member.status', 'Status')) + '</span></div>';
+          html += models.length ? models.map(function (m) {
+            return '<div class="pt-row"><span>' + esc(m.name || '') + '</span><span>' + esc(m.type || m.line || '') + '</span><span>' + esc(m.launch || '') + '</span><span>' + esc(m.status || '') + '</span></div>';
+          }).join('') : '<p class="pt-empty">' + esc(T('app.member.catalogueEmpty', 'Catalogue coming soon.')) + '</p>';
+          setTab(html);
+        }).catch(function () { setTab('<p class="pt-empty">' + esc(T('app.member.loadErr', 'Could not load. Please refresh.')) + '</p>'); });
+      }
+
+      function loadNews() {
+        pdb.from('news').select('*').eq('status', 'published').order('date', { ascending: false }).then(function (res) {
+          var rows = (res && res.data) || [];
+          if (!rows.length) { setTab('<p class="pt-sec-h">' + esc(T('app.member.news', 'Member News')) + '</p><p class="pt-empty">' + esc(T('app.member.newsEmpty', 'No news yet. Member announcements will appear here.')) + '</p>'); return; }
+          setTab('<p class="pt-sec-h">' + esc(T('app.member.news', 'Member News')) + '</p>' + rows.map(function (n) {
+            var inv = n.audience && n.audience !== 'all';
+            return '<div class="pt-card" style="margin-bottom:12px;"><h3>' + esc(n.title || '—') + (inv ? '<span class="pt-badge inv">' + esc(T('app.member.invitation', 'Invitation')) + '</span>' : '') + '</h3>'
+              + '<span class="meta">' + esc(n.date || '') + '</span>'
+              + (n.body ? '<p class="desc">' + esc(n.body) + '</p>' : '') + '</div>';
+          }).join(''));
+        }).catch(function () { setTab('<p class="pt-empty">' + esc(T('app.member.loadErr', 'Could not load. Please refresh.')) + '</p>'); });
+      }
+
+      route();
     });
   })();
   </script>
