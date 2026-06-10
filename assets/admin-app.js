@@ -1362,6 +1362,45 @@
   }
 
   /* ---------------- ROUTER ---------------- */
+  /* ---------------- impersonation ("view as", super-admin only) ---------------- */
+  function startImpersonation(id) {
+    if (!V.setImpersonation || !V.setImpersonation(id)) return;
+    var isMember = !!(V.heritageMembers && V.heritageMembers().some(function (m) { return m.id === id; }));
+    location.href = isMember ? 'portal.html' : 'index.html';
+  }
+  function openImpersonatePicker() {
+    if (!V.isSuperAdmin()) return;
+    var members = (V.heritageMembers ? V.heritageMembers() : []);
+    var memIds = {}; members.forEach(function (m) { memIds[m.id] = m; });
+    var users = V.store.all().slice().sort(function (a, b) { return (a.no || 0) - (b.no || 0); });
+    var ov = document.createElement('div');
+    ov.className = 'imp-modal';
+    ov.innerHTML = '<div class="imp-dialog" role="dialog" aria-label="Impersonate a user">'
+      + '<div class="imp-dhead"><span>Impersonate a user</span><button class="imp-x" id="impX" type="button" aria-label="Close">✕</button></div>'
+      + '<div class="imp-dsearch"><input id="impSearch" type="search" placeholder="Search name or email…" autocomplete="off"></div>'
+      + '<div class="imp-dlist" id="impList"></div>'
+      + '<p class="imp-dhint">You will see the site and console exactly as this user does. A red bar returns you to super-admin at any time.</p></div>';
+    document.body.appendChild(ov);
+    function roleOf(u) { return memIds[u.id] ? 'heritage' : (u.role === 'admin' ? 'admin' : 'vip'); }
+    function chip(u) {
+      var r = roleOf(u);
+      var lbl = r === 'heritage' ? ('Heritage' + (memIds[u.id] && memIds[u.id].tier ? ' · ' + memIds[u.id].tier : '')) : 'VIP';
+      return '<span class="role-chip vip">' + esc(lbl) + '</span>';
+    }
+    function paint(q) {
+      q = (q || '').toLowerCase();
+      var list = users.filter(function (u) { return roleOf(u) !== 'admin' && (!q || ((u.name || '') + ' ' + (u.email || '')).toLowerCase().indexOf(q) >= 0); });
+      document.getElementById('impList').innerHTML = list.length ? list.map(function (u) {
+        return '<button class="imp-row" type="button" data-imp="' + esc(u.id) + '"><span class="imp-meta"><span class="imp-nm">' + esc(u.name || '—') + '</span><span class="imp-em">' + esc(u.email || '') + '</span></span>' + chip(u) + '</button>';
+      }).join('') : '<p class="adm-empty" style="padding:20px;">No users match.</p>';
+      [].forEach.call(ov.querySelectorAll('[data-imp]'), function (b) { b.addEventListener('click', function () { startImpersonation(b.getAttribute('data-imp')); }); });
+    }
+    paint('');
+    var si = document.getElementById('impSearch'); if (si) { si.addEventListener('input', function () { paint(si.value); }); si.focus(); }
+    document.getElementById('impX').addEventListener('click', function () { ov.remove(); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+  }
+
   function render() {
     if (!V.isAdmin()) { toLogin(); return; }
     var so = document.getElementById('admSignout'); if (so) so.style.display = '';
@@ -1373,6 +1412,7 @@
       var nm = document.getElementById('admAcctName'); if (nm) nm.textContent = acct.email || acct.name;
       var av = document.getElementById('admAv'); if (av) av.textContent = (acct.name || 'SA').split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
     }
+    var impEl = document.getElementById('admImpersonate'); if (impEl) impEl.hidden = !sup;
     var h = (location.hash || '#dashboard').replace('#', '');
     buildNav();
     highlightNav();
@@ -1476,6 +1516,8 @@
       var t = e.target.closest('input[type="date"]');
       if (t && typeof t.showPicker === 'function') { try { t.showPicker(); } catch (err) {} }
     });
+    var imp = document.getElementById('admImpersonate');
+    if (imp) imp.addEventListener('click', function (e) { e.preventDefault(); openImpersonatePicker(); });
     render();
   });
 })();

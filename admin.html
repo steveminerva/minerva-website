@@ -120,6 +120,19 @@
   .role-chip { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.16em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--line); white-space: nowrap; }
   .role-chip.admin { color: var(--platinum-bright); border-color: rgba(184,188,194,0.45); }
   .role-chip.vip { color: var(--platinum-deep); }
+  /* impersonation picker */
+  .imp-modal { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .imp-dialog { width: min(94vw,460px); max-height: 80vh; display: flex; flex-direction: column; background: #0b0c0e; border: 1px solid var(--line); }
+  .imp-dhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--fg); }
+  .imp-x { background: none; border: 0; color: var(--fg-dim); font-size: 15px; cursor: pointer; }
+  .imp-dsearch { padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  .imp-dsearch input { width: 100%; box-sizing: border-box; background: #0a0b0d; border: 1px solid var(--line); color: var(--fg); font-family: var(--sans); font-size: 14px; padding: 10px 12px; }
+  .imp-dlist { overflow: auto; flex: 1; }
+  .imp-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: none; border: 0; border-bottom: 1px solid var(--line); color: var(--fg); cursor: pointer; text-align: left; }
+  .imp-row:hover { background: #0d0e11; }
+  .imp-meta { display: flex; flex-direction: column; gap: 2px; }
+  .imp-nm { font-size: 14px; } .imp-em { font-size: 12px; color: var(--fg-dim); }
+  .imp-dhint { padding: 14px 18px; margin: 0; font-size: 11px; color: var(--mute); line-height: 1.5; border-top: 1px solid var(--line); }
   .adm-empty { padding: 40px 0; font-weight: 300; color: var(--fg-dim); font-size: 1rem; }
   @media (max-width: 700px) {
     .adm-row { grid-template-columns: 30px 1fr 1fr !important; }
@@ -554,6 +567,7 @@
           <div class="adm-acct" tabindex="0"><span class="av" id="admAv">SA</span><span class="nm" id="admAcctName">admin@minervaluxurymotors.com</span><svg class="acct-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
           <div class="adm-acctmenu">
             <a class="acct-item" id="admProfileLink" href="#profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/></svg>Profile</a>
+            <a class="acct-item" id="admImpersonate" href="#" hidden><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M15.5 8l2 2 3.5-3.5"/></svg>Impersonate user</a>
             <a class="acct-item" id="admHelpLink" href="#help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4 1.8c0 1.5-2 2-2 3.2"/><circle cx="12" cy="17" r="0.5"/></svg>Help &amp; Support</a>
             <button class="acct-item danger" id="admSignout" type="button"><svg viewBox="0 0 24 24"><path d="M14 7V5a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-2M9.5 12H20m0 0l-3-3m3 3l-3 3"/></svg>Sign out</button>
           </div>

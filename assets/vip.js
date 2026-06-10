@@ -36,6 +36,9 @@
   var _profile = null;   // the caller's profiles row (VIP) — null for anon/admin
   var _isAdmin = false;  // true when the signed-in user's profile.is_admin
   var _isHeritage = false; // true when the signed-in user is a Heritage member (profile.tier set, not admin)
+  var _realIsAdmin = false; // the ACTUAL signed-in user is an admin (impersonation source)
+  var _realId = null;       // the actual signed-in user's id
+  var _impersonating = false; // super-admin is viewing the app as another user
   var _ready = false;    // becomes true after the first session resolution
   var _readyWaiters = [];
 
@@ -180,21 +183,38 @@
   /* ---------------- session refresh ----------------
      Reads the current Supabase session and caches the caller's profile +
      admin flag. Safe to call repeatedly (e.g. on auth state change). */
+  var IMP_KEY = 'minerva_imp';
+  var PROFILE_SEL = 'id, no, name, email, end_date, cancelled_at, invite_sent_at, is_admin, lang, tier, status, membership_end';
+  function readImp() { try { return sessionStorage.getItem(IMP_KEY); } catch (e) { return null; } }
+  function applyProfile(p) {
+    _profile = p;
+    _isAdmin = !!(p && p.is_admin);
+    _isHeritage = !!(p && p.tier && !p.is_admin);
+  }
+  function resetSession() { _profile = null; _isAdmin = false; _isHeritage = false; _realIsAdmin = false; _realId = null; _impersonating = false; }
   function refreshSession() {
-    if (!sb) { _profile = null; _isAdmin = false; _isHeritage = false; return Promise.resolve(); }
+    if (!sb) { resetSession(); return Promise.resolve(); }
     return sb.auth.getSession().then(function (res) {
       var session = res && res.data ? res.data.session : null;
-      if (!session || !session.user) { _profile = null; _isAdmin = false; _isHeritage = false; return; }
-      return sb.from('profiles')
-        .select('id, no, name, email, end_date, cancelled_at, invite_sent_at, is_admin, lang, tier, status, membership_end')
-        .eq('id', session.user.id).single()
-        .then(function (pr) {
-          var p = pr && pr.data ? pr.data : null;
-          _isAdmin = !!(p && p.is_admin);
-          _isHeritage = !!(p && p.tier && !p.is_admin);
-          _profile = p;
-        });
-    }).catch(function () { _profile = null; _isAdmin = false; _isHeritage = false; });
+      if (!session || !session.user) { resetSession(); return; }
+      return sb.from('profiles').select(PROFILE_SEL).eq('id', session.user.id).single().then(function (pr) {
+        var real = pr && pr.data ? pr.data : null;
+        _realIsAdmin = !!(real && real.is_admin);
+        _realId = real ? real.id : null;
+        var impId = readImp();
+        if (impId && _realIsAdmin && impId !== _realId) {
+          // "View as": a super-admin renders the app as the target user. The real
+          // session stays super-admin (who already has full read access via RLS),
+          // so nothing new is exposed — this is a UI overlay, not a credential takeover.
+          return sb.from('profiles').select(PROFILE_SEL).eq('id', impId).single().then(function (ip) {
+            var p = ip && ip.data ? ip.data : null;
+            if (p) { _impersonating = true; applyProfile(p); }
+            else { try { sessionStorage.removeItem(IMP_KEY); } catch (e) {} _impersonating = false; applyProfile(real); }
+          });
+        }
+        _impersonating = false; applyProfile(real);
+      });
+    }).catch(function () { resetSession(); });
   }
 
   /* ---------------- public getters (sync, read the cache) ---------------- */
@@ -221,6 +241,17 @@
   function memberPending() { return !!(_profile && _profile.status === 'pending'); }
   function heritageActive() { return !!(_isHeritage && _profile && _profile.status === 'active' && (!_profile.membership_end || todayStr() <= _profile.membership_end)); }
   function hasAccess() { return _isAdmin || !!currentVip() || heritageActive(); }
+
+  /* ---------------- impersonation ("view as", super-admin only) ---------------- */
+  function realIsAdmin() { return !!_realIsAdmin; }
+  function isImpersonating() { return !!_impersonating; }
+  function setImpersonation(id) {
+    if (!_realIsAdmin || !id || id === _realId) return false;
+    try { sessionStorage.setItem(IMP_KEY, id); } catch (e) { return false; }
+    try { if (sb) sb.from('audit_events').insert({ actor: _realId, event_type: 'impersonate-start', target: id }); } catch (e) {}
+    return true;
+  }
+  function clearImpersonation() { try { sessionStorage.removeItem(IMP_KEY); } catch (e) {} }
 
   /* ---------------- auth actions (async) ---------------- */
   // Super-admin: sign in, then confirm the profile is_admin. No password is
@@ -301,7 +332,10 @@
     // above reflect the resolved session before they're read):
     ready: whenReady, refresh: refreshSession,
     // protected-content loader (exposed for completeness / testing):
-    loadProtected: loadProtected
+    loadProtected: loadProtected,
+    // impersonation ("view as", super-admin only)
+    setImpersonation: setImpersonation, clearImpersonation: clearImpersonation,
+    isImpersonating: isImpersonating, realIsAdmin: realIsAdmin
   };
 
   /* ============================================================
@@ -326,6 +360,13 @@
       +   'box-shadow:0 14px 40px rgba(0,0,0,.5);transform:translateY(-101%);'
       +   'transition:transform .55s var(--ease);}'
       + '.vip-banner.show{transform:translateY(0);}'
+      /* impersonation bar */
+      + '.imp-bar{position:fixed;left:0;right:0;top:0;z-index:96;background:#7a1020;color:#fff;display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 16px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;}'
+      + '.imp-bar strong{color:#fff;font-weight:600;}'
+      + '.imp-bar button{background:transparent;border:1px solid rgba(255,255,255,.6);color:#fff;font:inherit;padding:5px 12px;cursor:pointer;letter-spacing:.14em;}'
+      + '.imp-bar button:hover{background:rgba(255,255,255,.12);}'
+      + 'body.has-imp{padding-top:34px;}'
+      + 'body.has-imp.has-vip .vip-banner{top:calc(var(--cookie-h,0px) + 34px);}'
       + '.vip-banner-inner{max-width:1640px;margin:0 auto;padding:10px var(--pad);'
       +   'display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;}'
       + '.vip-dot{width:6px;height:6px;border-radius:50%;background:var(--platinum-bright);'
@@ -507,6 +548,19 @@
   window.addEventListener('minervalang', function () {
     if (document.querySelector('.vip-banner') || document.querySelector('.vip-reopen')) renderBanner();
   });
+  // Red "Impersonating <name>" bar with one-click return to super-admin.
+  function showImpersonationBar() {
+    if (document.querySelector('.imp-bar')) return;
+    var nm = (_profile && (_profile.name || _profile.email)) || 'user';
+    var role = _isAdmin ? 'Admin' : (_isHeritage ? ('Heritage · ' + ((_profile && _profile.tier) || '')) : 'VIP');
+    var bar = document.createElement('div');
+    bar.className = 'imp-bar';
+    bar.innerHTML = '<span>' + esc(T('app.imp.label', 'Impersonating')) + ' <strong>' + esc(nm) + '</strong> · ' + esc((_profile && _profile.email) || '') + ' · ' + esc(role) + '</span>'
+      + '<button type="button" data-imp-exit>' + esc(T('app.imp.exit', 'Back to super-admin')) + '</button>';
+    document.body.appendChild(bar);
+    document.body.classList.add('has-imp');
+    bar.querySelector('[data-imp-exit]').addEventListener('click', function () { clearImpersonation(); location.reload(); });
+  }
 
   function showBanner(user) {
     if (document.querySelector('.vip-banner')) return;
@@ -701,6 +755,7 @@
     refreshSession().then(function () {
       document.documentElement.classList.remove('vip-checking');
       markReady();
+      if (isImpersonating()) showImpersonationBar();
       if (SKIP) return;
 
       var access = hasAccess();
