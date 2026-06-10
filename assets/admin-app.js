@@ -716,14 +716,33 @@
     models: [['name', 'Model', 'text'], ['line', 'Line', 'text'], ['launch', 'First made', 'date'], ['power', 'Powertrain', 'text'], ['units', 'Units', 'number'], ['status', 'Status', 'text']],
     coa: [['ref', 'Reference', 'text'], ['vin', 'VIN', 'text'], ['model', 'Model', 'text'], ['issued', 'Issued', 'date'], ['owner', 'Owner', 'text'], ['status', 'Status', 'text']]
   };
+  function ffInput(id, label, type, extra) {
+    return '<div class="ff"><label for="vf_' + id + '">' + esc(label) + '</label><div class="ff-input"><input id="vf_' + id + '" type="' + type + '"' + (type === 'date' ? '' : ' placeholder="' + esc(label) + '"') + (extra || '') + '></div></div>';
+  }
   function vehNewForm() {
-    var fields = VEH_FIELDS[vehTab];
     var title = vehTab === 'models' ? 'New vehicle model' : (vehTab === 'coa' ? 'New certificate' : 'New registered vehicle');
+    var grid;
+    if (vehTab === 'register') {
+      // Model is chosen from the Vehicle Models catalogue; "Other" reveals a free-text name.
+      // Model date is auto-filled from the chosen model (read-only) and only typed manually for "Other".
+      var models = (V.getModels && V.getModels()) || [];
+      var opts = '<option value="">Select model…</option>';
+      models.forEach(function (m) { if (m && m.name) opts += '<option value="' + esc(m.name) + '">' + esc(m.name) + '</option>'; });
+      opts += '<option value="__other__">Other (not listed)…</option>';
+      grid = ''
+        + ffInput('vin', 'VIN', 'text')
+        + ffInput('firstReg', 'First registration', 'date')
+        + '<div class="ff"><label for="vf_model_select">Model</label><div class="ff-input"><select id="vf_model_select" class="ff-select">' + opts + '</select></div></div>'
+        + ffInput('modelDate', 'Model date', 'date', ' readonly')
+        + ffInput('owner', 'Owner', 'text')
+        + ffInput('email', 'Email', 'email')
+        + '<div class="ff" id="vfOtherWrap" style="display:none;"><label for="vf_modelOther">New model name</label><div class="ff-input"><input id="vf_modelOther" type="text" placeholder="Model name"></div></div>';
+    } else {
+      grid = VEH_FIELDS[vehTab].map(function (f) { return ffInput(f[0], f[1], f[2]); }).join('');
+    }
     return '<form class="veh-newform" id="vehForm" onsubmit="return false;">'
       + '<p class="adm-section-h" style="margin:0 0 14px;">' + title + '</p>'
-      + '<div class="veh-newgrid">' + fields.map(function (f) {
-          return '<div class="ff"><label for="vf_' + f[0] + '">' + esc(f[1]) + '</label><div class="ff-input"><input id="vf_' + f[0] + '" type="' + f[2] + '"' + (f[2] === 'date' ? '' : ' placeholder="' + esc(f[1]) + '"') + '></div></div>';
-        }).join('') + '</div>'
+      + '<div class="veh-newgrid">' + grid + '</div>'
       + '<p class="adm-err" id="vfErr"></p>'
       + '<div class="adm-extend"><button class="btn" type="submit" id="vfSave">Save record</button><button class="btn-cancel" type="button" id="vfCancel" style="border-color:var(--line);color:var(--fg-dim);">Cancel</button></div>'
       + '</form>';
@@ -795,12 +814,53 @@
     var vn = document.getElementById('vNext'); if (vn) vn.addEventListener('click', function () { vehPage++; renderVehicles(); });
     var nb = document.getElementById('vehNewBtn'); if (nb) nb.addEventListener('click', function () { vehAdding = !vehAdding; renderVehicles(); });
     var vfCancel = document.getElementById('vfCancel'); if (vfCancel) vfCancel.addEventListener('click', function () { vehAdding = false; renderVehicles(); });
+    // Model dropdown (register tab): pick from catalogue -> auto-fill model date (read-only);
+    // pick "Other" -> reveal a free-text model name and let the date be typed.
+    var vmSel = document.getElementById('vf_model_select');
+    if (vmSel) {
+      var otherWrap = document.getElementById('vfOtherWrap');
+      var mdInput = document.getElementById('vf_modelDate');
+      var modelsByName = {};
+      ((V.getModels && V.getModels()) || []).forEach(function (m) { if (m && m.name) modelsByName[m.name] = m; });
+      vmSel.addEventListener('change', function () {
+        var val = vmSel.value;
+        if (val === '__other__') {
+          if (otherWrap) otherWrap.style.display = '';
+          if (mdInput) { mdInput.removeAttribute('readonly'); mdInput.value = ''; }
+        } else if (val === '') {
+          if (otherWrap) otherWrap.style.display = 'none';
+          if (mdInput) { mdInput.setAttribute('readonly', ''); mdInput.value = ''; }
+        } else {
+          if (otherWrap) otherWrap.style.display = 'none';
+          var m = modelsByName[val];
+          if (mdInput) { mdInput.setAttribute('readonly', ''); mdInput.value = (m && m.launch) ? m.launch : ''; }
+        }
+      });
+    }
     var vfSave = document.getElementById('vfSave');
     if (vfSave) vfSave.addEventListener('click', function () {
-      var fields = VEH_FIELDS[vehTab], rec = {}, err = document.getElementById('vfErr');
-      fields.forEach(function (f) { var el = document.getElementById('vf_' + f[0]); rec[f[0]] = el ? el.value.trim() : ''; });
-      var firstKey = fields[0][0];
-      if (!rec[firstKey]) { err.textContent = fields[0][1] + ' is required'; return; }
+      var err = document.getElementById('vfErr'), rec = {};
+      function valOf(id) { var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; }
+      if (vehTab === 'register') {
+        rec.vin = valOf('vf_vin'); rec.firstReg = valOf('vf_firstReg');
+        rec.owner = valOf('vf_owner'); rec.email = valOf('vf_email');
+        var sel = valOf('vf_model_select');
+        if (!rec.vin) { err.textContent = 'VIN is required'; return; }
+        if (!sel) { err.textContent = 'Please choose a model (or "Other")'; return; }
+        if (sel === '__other__') {
+          rec.model = valOf('vf_modelOther');
+          rec.modelDate = valOf('vf_modelDate');
+          if (!rec.model) { err.textContent = 'New model name is required'; return; }
+        } else {
+          rec.model = sel;
+          rec.modelDate = valOf('vf_modelDate');
+        }
+      } else {
+        var fields = VEH_FIELDS[vehTab];
+        fields.forEach(function (f) { var el = document.getElementById('vf_' + f[0]); rec[f[0]] = el ? el.value.trim() : ''; });
+        var firstKey = fields[0][0];
+        if (!rec[firstKey]) { err.textContent = fields[0][1] + ' is required'; return; }
+      }
       var saveBtn = document.getElementById('vfSave');
       if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
       var add = (vehTab === 'register') ? V.addVehicle(rec) : (vehTab === 'models') ? V.addModel(rec) : V.addCoa(rec);
