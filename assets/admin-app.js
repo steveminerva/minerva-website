@@ -451,7 +451,7 @@
     var cols = sup ? '34px 1.2fr 1.7fr 0.7fr 1fr 1.1fr' : '34px 1.3fr 1.9fr 1fr 1.1fr';
     var head = '<div class="adm-row head" style="--cols:' + cols + '">'
       + '<span class="c-no">\u2116</span><span class="c-name">Name</span><span class="c-email">Email</span>'
-      + (sup ? '<span class="c-role">Type</span>' : '')
+      + (sup ? '<span class="c-role">Role</span>' : '')
       + '<span class="c-end">End date</span><span class="c-login">Last login</span></div>';
 
     var rows;
@@ -461,6 +461,8 @@
       rows = '<div class="adm-table">' + head
         + pageList.map(function (u) {
             var role = u.role || 'vip';
+            var isSuperRow = String(u.email || '').toLowerCase() === 'admin@minervaluxurymotors.com';
+            var roleLbl = isSuperRow ? 'Super admin' : (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP');
             var last = (u.logins && u.logins.length) ? V.fmtDateTime(u.logins[u.logins.length - 1]).split(' \u00b7 ')[0] : '\u2014';
             var endCls = role === 'admin' ? 'none' : (u.endDate ? (V.isExpired(u) ? 'exp' : '') : 'none');
             var endTxt = role === 'admin' ? 'No expiry' : (u.cancelled ? 'Cancelled' : (u.endDate ? (V.fmtDate(u.endDate) + (V.isExpired(u) ? ' \u00b7 expired' : '')) : 'No end date'));
@@ -469,7 +471,7 @@
               + '<span class="c-no">' + (u.no < 10 ? '0' : '') + u.no + '</span>'
               + '<span class="c-name"><a data-uid="' + esc(u.id) + '">' + esc(u.name) + flag + '</a></span>'
               + '<span class="c-email">' + esc(u.email) + '</span>'
-              + (sup ? '<span class="c-role"><span class="role-chip ' + (role === 'admin' ? 'admin' : 'vip') + '">' + (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</span></span>' : '')
+              + (sup ? '<span class="c-role"><span class="role-chip ' + (isSuperRow || role === 'admin' ? 'admin' : 'vip') + '">' + roleLbl + '</span></span>' : '')
               + '<span class="c-end ' + endCls + '">' + esc(endTxt) + '</span>'
               + '<span class="c-login">' + esc(last) + '</span>'
               + '</div>';
@@ -509,6 +511,7 @@
     var u = V.store.get(ss(LAST_USER));
     if (!u) { location.hash = '#users'; render(); return; }
     var role = u.role || 'vip';
+    var isSuperRow = String(u.email || '').toLowerCase() === 'admin@minervaluxurymotors.com';
     var isAdminUser = role === 'admin';
     var expired = !isAdminUser && V.isExpired(u);
     var cancelled = !!u.cancelled;
@@ -530,7 +533,7 @@
       +   '<p class="adm-crumb"><a class="cr-root" href="#users">Manage Users</a><span class="cr-sep">›</span><span class="cr-here">' + esc(u.name) + '</span></p>'
       +   '<div class="adm-detail-meta" style="margin-top:20px;">'
       +     '<span>Email <b>' + esc(u.email) + '</b></span>'
-      +     '<span>Type <b>' + (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</b></span>'
+      +     '<span>Role <b>' + (isSuperRow ? 'Super admin' : role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</b></span>'
       +     '<span class="adm-status ' + statusCls + '"><span class="pip"></span>' + statusTxt + '</span>'
       +     (isAdminUser ? '' : '<span>End date <b>' + (u.endDate ? esc(V.fmtDate(u.endDate)) : 'None') + '</b></span>')
       +   '</div>'

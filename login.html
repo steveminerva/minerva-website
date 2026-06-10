@@ -34,6 +34,12 @@
   .pw-eye .eye-off { display: none; }
   .pw-eye.on .eye-on { display: none; }
   .pw-eye.on .eye-off { display: block; }
+  /* Mobile: the registration form is taller than the screen. The centered hero
+     layout (.page justify-content:center) would clip its top out of reach, so
+     top-align and let the form scroll naturally on small viewports. */
+  @media (max-width: 600px) {
+    .page { justify-content: flex-start; padding-top: clamp(86px, 12vh, 116px); padding-bottom: 60px; }
+  }
 </style>
 </head>
 <body class="inner">

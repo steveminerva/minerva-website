@@ -39,6 +39,19 @@
   .pt-catrow .yr { font-family:var(--mono); color:var(--platinum-deep); font-size:11px; }
   .pt-empty { color:var(--mute); font-style:italic; padding:24px 0; }
   .pt-sec-h { font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--platinum-deep); margin:6px 0 8px; }
+  /* The portal is a working surface, not a centered hero. Override .page's
+     vertical/horizontal centering so the dashboard top-aligns, fills the width
+     and reads left — and never gets clipped at the top when content is tall. */
+  .page { justify-content:flex-start; align-items:stretch; text-align:left; padding-top:clamp(84px,11vh,120px); }
+  .pt-wrap { width:100%; }
+  .pt-center { text-align:center; }   /* keep the pending-review wall centered */
+  @media (max-width: 600px) {
+    .page { padding-left:18px; padding-right:18px; }
+    .pt-tab { flex:1 1 auto; text-align:center; }
+    .pt-grid { grid-template-columns:1fr; }
+    .pt-title { font-size:clamp(1.45rem,7vw,2rem); }
+    .pt-head { gap:8px; }
+  }
 </style>
 </head>
 <body class="inner">

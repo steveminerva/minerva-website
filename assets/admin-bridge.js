@@ -487,7 +487,7 @@
     bridgeStore.denyMember = function (id, comment) { return callFn('heritage-decision', { userId: id, action: 'deny', comment: comment || '' }, true).then(function (r) { refreshUsers(); refreshMembers(); refreshMemberList(); return r; }); };
     bridgeStore.renewMember = function (id) { return callFn('heritage-decision', { userId: id, action: 'accept' }, true).then(function (r) { refreshUsers(); refreshMembers(); refreshMemberList(); return r; }); };
     // Super-admin: change an existing user's account type (VIP / Admin / Heritage).
-    bridgeStore.setUserRole = function (id, role, tier) { return callFn('admin-set-role', { userId: id, role: role, tier: tier || null }, true).then(function (r) { refreshUsers(); refreshUser(id); refreshMembers(); refreshMemberList(); return r; }); };
+    bridgeStore.setUserRole = function (id, role, tier) { return callFn('admin-set-role', { userId: id, role: role, tier: tier || null }, true).then(function (r) { refreshMembers(); refreshMemberList(); return refreshUsers().then(function () { return refreshUser(id); }).then(function () { return r; }); }); };
 
     // Wait for the shared session to be recovered before the first read, so the very
     // first query is authenticated (avoids a transient anonymous read returning nothing).

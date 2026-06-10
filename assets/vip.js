@@ -119,6 +119,11 @@
       cancelled: ms(row.cancelledAt || row.cancelled_at || null),
       created: ms(row.createdAt || row.created_at || null),
       lang: row.lang || 'en',
+      // carry the account type through so the admin list/detail show the correct
+      // chip — without this, role is dropped and every user defaults to VIP.
+      role: row.role || (row.is_admin || row.isAdmin ? 'admin' : (row.tier ? 'heritage' : 'vip')),
+      tier: row.tier || null,
+      isAdmin: !!(row.is_admin || row.isAdmin),
       logins: [],
       events: [],
       extReq: null
