@@ -1616,6 +1616,14 @@ a.foot-link:hover { color: var(--platinum-bright); }
   aspect-ratio: 4 / 3;
   border: 1px solid var(--line);
 }
+/* Team portraits — face in a circle with a thin Minerva-red border */
+.team-badge {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
 .team-name { font-weight: 400; font-size: clamp(1.1rem, 2vw, 1.45rem); color: var(--fg); letter-spacing: 0.01em; }
 .team-name a {
   color: inherit;

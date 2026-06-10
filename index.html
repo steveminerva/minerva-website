@@ -102,6 +102,33 @@
   <script src="assets/image-slot.js"></script>
   <script src="assets/i18n.js"></script>
   <script src="assets/minerva.js"></script>
-  <!-- Tweaks panel (design-time only) removed for the production build. -->
+  <!-- Design-time Tweaks panel (React/Babel) loaded lazily AFTER the page is
+       ready, so the heavy in-browser compiler never blocks first paint/load. -->
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        function load(src, integrity) {
+          return new Promise(function (res) {
+            var s = document.createElement('script');
+            s.src = src;
+            if (integrity) { s.integrity = integrity; s.crossOrigin = 'anonymous'; }
+            s.onload = res; s.onerror = res;
+            document.body.appendChild(s);
+          });
+        }
+        (async function () {
+          await load('https://unpkg.com/react@18.3.1/umd/react.development.js', 'sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L');
+          await load('https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js', 'sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm');
+          ['tweaks-panel.jsx', 'assets/motto-tweaks.jsx'].forEach(function (src) {
+            var t = document.createElement('script');
+            t.type = 'text/babel'; t.setAttribute('data-presets', 'react'); t.src = src;
+            document.body.appendChild(t);
+          });
+          await load('https://unpkg.com/@babel/standalone@7.29.0/babel.min.js', 'sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y');
+          if (window.Babel && window.Babel.transformScriptTags) { window.Babel.transformScriptTags(); }
+        })();
+      }, 150);
+    });
+  </script>
 </body>
 </html>

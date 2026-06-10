@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minerva Luxury Motors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+</head>
+<body class="home">
+
+  <!-- TOP BAR -->
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- MENU DRAWER -->
+  <nav class="menu-overlay" id="menu" aria-hidden="true" aria-label="Main menu">
+    <div class="menu-ghost" aria-hidden="true">MINERVA</div>
+    <div class="menu-inner">
+      <p class="menu-eyebrow">Minerva Luxury Motors — Est. Belgium</p>
+      <div class="menu-main">
+        <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">02</span>Aegis<span class="mi-tag">Hypercar</span></a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">03</span>Sovereign<span class="mi-tag">SUV</span></a>
+      </div>
+      <div class="menu-foot">
+        <a class="menu-login" href="login.html">Login <span>— track your order</span></a>
+        <div class="menu-lang" id="langRow" role="group" aria-label="Language">
+          <button class="lang active" data-lang="en">English</button>
+          <button class="lang" data-lang="nl">Nederlands</button>
+          <button class="lang" data-lang="fr">Français</button>
+          <button class="lang" data-lang="de">Deutsch</button>
+          <button class="lang" data-lang="it">Italiano</button>
+          <button class="lang" data-lang="es">Español</button>
+          <button class="lang cjk" data-lang="zh">中文</button>
+          <button class="lang cjk" data-lang="ja">日本語</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" data-screen-label="Hero">
+    <p class="hero-eyebrow">A Reawakening — 2026</p>
+    <h1 class="hero-logo">
+      <image-slot id="minerva-logo" shape="rect" fit="contain" src="uploads/minerva-logo-black.png" placeholder="Drop Minerva logo"></image-slot>
+      <span class="sr-only">Minerva</span>
+    </h1>
+    <p class="wordmark-sub">Luxury Motors</p>
+    <p class="hero-tagline">Engineered with Formula&nbsp;1 technology.</p>
+    <div class="scroll-cue" aria-hidden="true">
+      <span class="lbl">Scroll</span>
+      <span class="stem"></span>
+    </div>
+  </section>
+
+  <!-- AEGIS -->
+  <section class="model" id="aegis" data-screen-label="Aegis">
+    <p class="model-eyebrow reveal">Model 01 — Hypercar</p>
+    <a class="profile aegis reveal d1" href="aegis.html" aria-label="Aegis — profile render">
+      <span class="crop tl"></span><span class="crop tr"></span>
+      <span class="crop bl"></span><span class="crop br"></span>
+      <span class="ph-label"><span class="dot"></span>Aegis · Profile Render</span>
+    </a>
+    <h2 class="model-name reveal d1">AEGIS</h2>
+    <p class="model-power reveal d2">Hybrid e-Fuel V12</p>
+    <p class="model-note reveal d2">The world's first hybrid e-fuel V12 hypercar.</p>
+  </section>
+
+  <!-- SOVEREIGN -->
+  <section class="model" id="sovereign" data-screen-label="Sovereign">
+    <p class="model-eyebrow reveal">Model 02 — SUV · Long Wheelbase</p>
+    <a class="profile sovereign reveal d1" href="sovereign.html" aria-label="Sovereign — profile render">
+      <span class="crop tl"></span><span class="crop tr"></span>
+      <span class="crop bl"></span><span class="crop br"></span>
+      <span class="ph-label"><span class="dot"></span>Sovereign · Profile Render</span>
+    </a>
+    <h2 class="model-name reveal d1">SOVEREIGN</h2>
+    <p class="model-power reveal d2">Hydrogen ICE V12</p>
+    <p class="model-note reveal d2">The world's first hydrogen combustion V12.</p>
+  </section>
+
+  <!-- CLOSING -->
+  <section class="closing" data-screen-label="Closing">
+    <p class="c-eyebrow reveal">The Experience</p>
+    <p class="c-line reveal d1">Formula&nbsp;1 engineering, reborn for the road.</p>
+    <p class="c-sub reveal d2">Race Track Experience Program — by invitation</p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <span class="f-mark">MINERVA LUXURY MOTORS</span>
+    <span>Belgium</span>
+    <span>© 2026 — All rights reserved</span>
+  </footer>
+
+  <script src="assets/image-slot.js"></script>
+  <script src="assets/minerva.js"></script>
+</body>
+</html>
