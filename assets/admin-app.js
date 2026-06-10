@@ -21,6 +21,7 @@
   }
 
   var root = document.getElementById('admRoot');
+  var pendingConcierge = null;   // question typed in the top bar, asked once the concierge opens
   var topBar = { hidden: false };   // sidebar shell is always visible; no-op for legacy calls
   var LAST_NEW = 'minerva_admin_lastnew';
   var LAST_USER = 'minerva_admin_lastuser';
@@ -57,13 +58,13 @@
   function T(s) { var cl = consoleLang(); return (cl === 'fr' && AT[s] && AT[s].fr) ? AT[s].fr : s; }
   // Translate the static topbar chrome (account menu, search, bell) to the console language.
   function applyConsoleLang() {
-    var map = [['#admProfileLink', 'Profile'], ['#admHelpLink', 'Help & Support'], ['#admSignout', 'Sign out'], ['#admBellClear', 'Mark all read']];
+    var map = [['#admProfileLink', 'Profile'], ['#admHelpLink', 'Minerva Concierge'], ['#admSignout', 'Sign out'], ['#admBellClear', 'Mark all read']];
     map.forEach(function (m) {
       var el = document.querySelector(m[0]); if (!el) return;
       var svg = el.querySelector('svg'); var txt = T(m[1]);
       el.textContent = ''; if (svg) el.appendChild(svg); el.appendChild(document.createTextNode(txt));
     });
-    var si = document.getElementById('admSearchInput'); if (si) si.placeholder = T('Search users, vehicles, certificates…');
+    var si = document.getElementById('admSearchInput'); if (si) si.placeholder = T('Ask the Minerva concierge…');
     var bh = document.querySelector('.bell-head span'); if (bh) bh.textContent = T('Notifications');
     var lbl = document.getElementById('admLbl'); if (lbl) lbl.textContent = T(V.isSuperAdmin() ? 'Administration' : 'User Management');
   }
@@ -149,13 +150,17 @@
       +     (sup
           ? '<div class="ff"><label>Account type</label><div class="seg" id="segType">'
             + '<button type="button" data-type="vip" class="on">VIP guest</button>'
-            + '<button type="button" data-type="admin" disabled hidden title="Admin provisioning is coming soon">Admin</button></div>'
+            + '<button type="button" data-type="admin">Admin</button>'
+            + '<button type="button" data-type="heritage">Heritage</button></div>'
             + '<span class="field-hint" id="typeHint">VIP \u2014 time-limited access to the private pages.</span></div>'
           : '<input type="hidden" id="fixedType" value="vip">')
       +     '<div class="ff"><label for="nName">Full name</label><div class="ff-input"><input id="nName" type="text" placeholder="e.g. Alexandra Verhoeven"></div></div>'
       +     '<div class="ff"><label for="nEmail">Email address</label><div class="ff-input"><input id="nEmail" type="email" placeholder="e.g. guest@example.com"></div></div>'
       +     '<div class="ff"><label for="nLang">Language</label><div class="ff-input"><select id="nLang" class="ff-select">' + ADM_LANG_OPTS('en') + '</select></div>'
       +       '<span class="field-hint">The invitation email and the user\u2019s sign-in link are sent in this language.</span></div>'
+      +     '<div class="ff" id="tierBlock" style="display:none;"><label for="nTier">Heritage tier</label><div class="ff-input"><select id="nTier" class="ff-select"><option value="admirer">Admirer</option><option value="custodian">Custodian</option><option value="commissioner">Commissioner</option></select></div>'
+      +       '<span class="field-hint">Owner tiers (Custodian / Commissioner) require a VIN. Created members are active for 12 months.</span></div>'
+      +     '<div class="ff" id="vinBlock" style="display:none;"><label for="nVin">Vehicle VIN</label><div class="ff-input"><input id="nVin" type="text" placeholder="The VIN of their Minerva"></div></div>'
       +     '<div class="ff" id="dateBlock">'
       +       '<label for="nEnd">Access valid until</label>'
       +       '<div class="ff-input"><input id="nEnd" type="date" value="' + defDate + '" min="' + minDate + '" max="' + maxDate + '"></div>'
@@ -200,6 +205,14 @@
       });
     });
 
+    var tierBlock = document.getElementById('tierBlock');
+    var vinBlock = document.getElementById('vinBlock');
+    var tierSel = document.getElementById('nTier');
+    function syncVin() {
+      var t = tierSel ? tierSel.value : 'admirer';
+      if (vinBlock) vinBlock.style.display = (type === 'heritage' && t !== 'admirer') ? '' : 'none';
+    }
+    if (tierSel) tierSel.addEventListener('change', syncVin);
     if (sup) {
       var seg = document.getElementById('segType');
       var hint = document.getElementById('typeHint');
@@ -208,13 +221,13 @@
           type = b.getAttribute('data-type');
           [].forEach.call(seg.querySelectorAll('button'), function (x) { x.classList.remove('on'); });
           b.classList.add('on');
-          if (type === 'admin') {
-            dateBlock.style.display = 'none';
-            hint.textContent = 'Admin \u2014 full console access, never expires.';
-          } else {
-            dateBlock.style.display = '';
-            hint.textContent = 'VIP \u2014 time-limited access to the private pages.';
-          }
+          var isVip = type === 'vip', isHeritage = type === 'heritage';
+          dateBlock.style.display = isVip ? '' : 'none';
+          if (tierBlock) tierBlock.style.display = isHeritage ? '' : 'none';
+          syncVin();
+          hint.textContent = isVip ? 'VIP \u2014 time-limited access to the private pages.'
+            : isHeritage ? 'Heritage \u2014 a member account (Admirer / Custodian / Commissioner), active 12 months.'
+            : 'Admin \u2014 full console access, never expires.';
         });
       });
     }
@@ -227,11 +240,14 @@
       var email = document.getElementById('nEmail').value.trim();
       if (!name) { err.textContent = 'Enter a full name'; return; }
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email address'; return; }
-      var end = null;
+      var end = null, tier = null, vin = null;
       if (role === 'vip') {
         end = endEl.value;
         if (!end) { err.textContent = 'Choose an access end date'; return; }
         if (end < minDate || end > maxDate) { err.textContent = 'End date must be within the next three months'; return; }
+      } else if (role === 'heritage') {
+        tier = document.getElementById('nTier').value;
+        if (tier !== 'admirer') { vin = (document.getElementById('nVin').value || '').trim(); if (!vin) { err.textContent = 'Enter the vehicle VIN for an owner tier'; return; } }
       }
       var btn = document.getElementById('nBtn');
       if (btn) btn.disabled = true;
@@ -239,7 +255,7 @@
       // the auth user + profile and sends the invitation email).
       Promise.resolve(V.store.findByEmail(email)).then(function (existing) {
         if (existing) { err.textContent = 'A user with this email already exists'; if (btn) btn.disabled = false; return; }
-        return Promise.resolve(V.store.create(name, email, end, role, document.getElementById('nLang').value)).then(function (u) {
+        return Promise.resolve(V.store.create(name, email, end, role, document.getElementById('nLang').value, tier, vin)).then(function (u) {
           V.logActivity('user-created', name);
           // The created user carries the one-time password (returned only at
           // creation time, never retrievable later) for the confirmation screen.
@@ -247,8 +263,10 @@
           ssSet(LAST_NEW, u.id);
           location.hash = '#created'; render();
         });
-      }).catch(function () {
-        err.textContent = 'Could not create the user. Please try again.';
+      }).catch(function (e) {
+        err.textContent = (e && e.message === 'email-taken') ? 'A user with this email already exists'
+          : (e && e.message === 'super-only') ? 'Only the super-admin can create admin accounts'
+          : 'Could not create the user. Please try again.';
         if (btn) btn.disabled = false;
       });
     }
@@ -756,6 +774,7 @@
 
     var stats = [
       ['Heritage members', V.getMembersCount(), 'Total members on the register'],
+      ['Vehicles produced', (80000 + (V.vehicleCount() || 0)).toLocaleString('en-US'), 'Est. since 1897 · +1 per new registration'],
       ['VIP users', d.vipUsers, 'Active memberships'],
       ['Admin users', d.adminUsers, 'With console access'],
     ];
@@ -1339,6 +1358,7 @@
     document.getElementById('ccForm').addEventListener('submit', function () { ask(input.value); });
     [].forEach.call(root.querySelectorAll('[data-q]'), function (b) { b.addEventListener('click', function () { ask(b.getAttribute('data-q')); }); });
     input.focus();
+    if (pendingConcierge) { var pq = pendingConcierge; pendingConcierge = null; ask(pq); }
   }
 
   function bindBack(hash) {
@@ -1389,7 +1409,7 @@
     location.href = isMember ? 'portal.html' : 'index.html';
   }
   function openImpersonatePicker() {
-    if (!V.isSuperAdmin()) return;
+    if (!((V.isSuperAdmin && V.isSuperAdmin()) || (V.realIsAdmin && V.realIsAdmin()))) return;
     var members = (V.heritageMembers ? V.heritageMembers() : []);
     var memIds = {}; members.forEach(function (m) { memIds[m.id] = m; });
     var users = V.store.all().slice().sort(function (a, b) { return (a.no || 0) - (b.no || 0); });
@@ -1432,7 +1452,7 @@
       var nm = document.getElementById('admAcctName'); if (nm) nm.textContent = acct.email || acct.name;
       var av = document.getElementById('admAv'); if (av) av.textContent = (acct.name || 'SA').split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
     }
-    var impEl = document.getElementById('admImpersonate'); if (impEl) impEl.hidden = !sup;
+    var impEl = document.getElementById('admImpersonate'); if (impEl) impEl.hidden = !(sup || (V.realIsAdmin && V.realIsAdmin()));
     var h = (location.hash || '#dashboard').replace('#', '');
     buildNav();
     highlightNav();
@@ -1538,6 +1558,10 @@
     });
     var imp = document.getElementById('admImpersonate');
     if (imp) imp.addEventListener('click', function (e) { e.preventDefault(); openImpersonatePicker(); });
+    var topAsk = document.getElementById('admSearchInput');
+    if (topAsk) topAsk.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); var q = (topAsk.value || '').trim(); if (!q) return; pendingConcierge = q; topAsk.value = ''; location.hash = '#help'; render(); }
+    });
     render();
   });
 })();

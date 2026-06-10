@@ -142,7 +142,17 @@
       },
       // returns a Promise (admin-app.js wraps it). Phase 1 provisions VIPs only;
       // the role arg is accepted for signature-compatibility but ignored.
-      create: function (name, email, endDate, role, lang) {
+      create: function (name, email, endDate, role, lang, tier, vin) {
+        // Admin + Heritage accounts go through the hardened admin-create-user function
+        // (admin creation is super-admin-gated server-side). VIPs keep the existing path.
+        if (role === 'admin' || role === 'heritage') {
+          return callFn('admin-create-user', { type: role, name: name, email: email, lang: lang || 'en', tier: tier || null, vin: vin || null }, true).then(function (u) {
+            u = u || {}; u.role = role;
+            if (u.pw == null && u.password != null) u.pw = u.password;
+            refreshUsers(); refreshMembers(); refreshMemberList();
+            return u;
+          });
+        }
         if (!liveStore.create) return Promise.reject(new Error('store-unavailable'));
         return Promise.resolve(liveStore.create(name, email, endDate, lang)).then(function (u) {
           u = u || {};
@@ -493,7 +503,7 @@
 
     /* ----- extend the live MinervaVIP (only where it doesn't already define) ----- */
     var additions = {
-      isSuperAdmin: function () { return _isSuper; },
+      isSuperAdmin: function () { return _isSuper || !!(_profile && _profile.is_admin && String(_profile.email || '').toLowerCase() === SUPER_ADMIN_EMAIL); },
       dashboardData: dashboardData,
       account: account,
       passwordChecks: passwordChecks,
