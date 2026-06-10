@@ -469,7 +469,7 @@
               + '<span class="c-no">' + (u.no < 10 ? '0' : '') + u.no + '</span>'
               + '<span class="c-name"><a data-uid="' + esc(u.id) + '">' + esc(u.name) + flag + '</a></span>'
               + '<span class="c-email">' + esc(u.email) + '</span>'
-              + (sup ? '<span class="c-role"><span class="role-chip ' + role + '">' + (role === 'admin' ? 'Admin' : 'VIP') + '</span></span>' : '')
+              + (sup ? '<span class="c-role"><span class="role-chip ' + (role === 'admin' ? 'admin' : 'vip') + '">' + (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</span></span>' : '')
               + '<span class="c-end ' + endCls + '">' + esc(endTxt) + '</span>'
               + '<span class="c-login">' + esc(last) + '</span>'
               + '</div>';
@@ -483,7 +483,6 @@
       +     '<p class="adm-crumb"><span class="cr-here">Users</span></p>'
       +     '<button class="btn-new" id="newUserBtn" type="button"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New user</button>'
       +   '</div>'
-      +   '<p class="adm-sub">' + list.length + (sup ? ' account' : ' VIP guest') + (list.length === 1 ? '' : 's') + '. Select a name to view the audit log and manage access.</p>'
       +   rows
       +   (list.length ? pagerBlock(usersPage, list.length, sup ? 'account' : 'guest', 'uPrev', 'uNext') : '')
       + '</div>';
@@ -531,7 +530,7 @@
       +   '<p class="adm-crumb"><a class="cr-root" href="#users">Manage Users</a><span class="cr-sep">›</span><span class="cr-here">' + esc(u.name) + '</span></p>'
       +   '<div class="adm-detail-meta" style="margin-top:20px;">'
       +     '<span>Email <b>' + esc(u.email) + '</b></span>'
-      +     '<span>Type <b>' + (isAdminUser ? 'Admin' : 'VIP') + '</b></span>'
+      +     '<span>Type <b>' + (role === 'admin' ? 'Admin' : role === 'heritage' ? 'Heritage' : 'VIP') + '</b></span>'
       +     '<span class="adm-status ' + statusCls + '"><span class="pip"></span>' + statusTxt + '</span>'
       +     (isAdminUser ? '' : '<span>End date <b>' + (u.endDate ? esc(V.fmtDate(u.endDate)) : 'None') + '</b></span>')
       +   '</div>'
@@ -554,15 +553,17 @@
       +     '<p class="adm-okmsg" id="extMsg" style="margin-top:14px;"></p>'))
       +   ((V.isSuperAdmin && V.isSuperAdmin()) ? (''
       +     '<p class="adm-section-h">Change account type</p>'
-      +     '<form class="adm-extend" id="roleForm" onsubmit="return false;">'
-      +       '<div class="ff" style="flex:1;min-width:200px;"><label for="roleSel">New role</label>'
-      +         '<div class="ff-input"><select id="roleSel" class="ff-select"><option value="vip">VIP guest</option><option value="admin">Admin</option><option value="heritage">Heritage member</option></select></div></div>'
-      +       '<div class="ff" id="roleTierBlock" style="flex:0 0 auto;display:none;"><label for="roleTier">Tier</label>'
-      +         '<div class="ff-input"><select id="roleTier" class="ff-select"><option value="admirer">Admirer</option><option value="custodian">Custodian</option><option value="commissioner">Commissioner</option></select></div></div>'
-      +       '<button class="btn" type="submit" id="roleBtn">Change role</button>'
-      +     '</form>'
-      +     '<p class="field-hint" style="margin:-4px 0 6px;">VIP → 3-month access · Heritage → active 12-month member · Admin → full console access.</p>'
-      +     '<p class="adm-okmsg" id="roleMsg" style="margin-top:8px;"></p>') : '')
+      +     '<div class="ff"><label>New role</label><div class="seg" id="roleSeg">'
+      +       '<button type="button" data-role="vip" class="on">VIP guest</button>'
+      +       '<button type="button" data-role="admin">Admin</button>'
+      +       '<button type="button" data-role="heritage">Heritage</button></div></div>'
+      +     '<div class="ff" id="roleTierBlock" style="display:none;margin-top:14px;"><label>Heritage tier</label><div class="seg" id="roleTierSeg">'
+      +       '<button type="button" data-tier="admirer" class="on">Admirer</button>'
+      +       '<button type="button" data-tier="custodian">Custodian</button>'
+      +       '<button type="button" data-tier="commissioner">Commissioner</button></div></div>'
+      +     '<p class="field-hint" style="margin:10px 0;">VIP → 3-month access · Heritage → active 12-month member · Admin → full console access.</p>'
+      +     '<div class="adm-extend"><button class="btn" type="button" id="roleBtn">Change role</button></div>'
+      +     '<p class="adm-okmsg" id="roleMsg" style="margin-top:10px;"></p>') : '')
       +   '<p class="adm-section-h">' + (isAdminUser ? 'Remove admin' : 'Cancel access') + '</p>'
       +   (cancelled
            ? '<p class="adm-okmsg" style="color:var(--minerva-red-bright);">Access cancelled on ' + esc(V.fmtDateTime(u.cancelled)) + '</p>'
@@ -614,25 +615,42 @@
       document.getElementById('extBtn').addEventListener('click', go);
     }
 
-    var roleForm = document.getElementById('roleForm');
-    if (roleForm) {
-      var roleSel = document.getElementById('roleSel');
+    var roleSeg = document.getElementById('roleSeg');
+    if (roleSeg) {
       var roleTierBlock = document.getElementById('roleTierBlock');
+      var roleTierSeg = document.getElementById('roleTierSeg');
       var roleMsg = document.getElementById('roleMsg');
       var roleBtn = document.getElementById('roleBtn');
-      roleSel.value = (role === 'admin') ? 'admin' : 'vip';
-      function syncRoleTier() { roleTierBlock.style.display = roleSel.value === 'heritage' ? '' : 'none'; }
+      var newRole = (role === 'admin') ? 'admin' : 'vip';
+      var newTier = 'admirer';
+      [].forEach.call(roleSeg.querySelectorAll('button'), function (b) { b.classList.toggle('on', b.getAttribute('data-role') === newRole); });
+      function syncRoleTier() { roleTierBlock.style.display = (newRole === 'heritage') ? '' : 'none'; }
       syncRoleTier();
-      roleSel.addEventListener('change', syncRoleTier);
+      [].forEach.call(roleSeg.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () {
+          newRole = b.getAttribute('data-role');
+          [].forEach.call(roleSeg.querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+          b.classList.add('on'); syncRoleTier();
+        });
+      });
+      if (roleTierSeg) [].forEach.call(roleTierSeg.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () {
+          newTier = b.getAttribute('data-tier');
+          [].forEach.call(roleTierSeg.querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
+        });
+      });
       function goRole() {
-        var newRole = roleSel.value;
-        var tier = newRole === 'heritage' ? document.getElementById('roleTier').value : null;
         if (newRole === 'admin' && !confirm('Grant full console access to ' + u.name + '? They will become an administrator.')) return;
         roleMsg.style.color = ''; roleMsg.textContent = 'Updating…'; if (roleBtn) roleBtn.disabled = true;
-        Promise.resolve(V.store.setUserRole(u.id, newRole, tier)).then(function () {
-          roleMsg.textContent = 'Account type changed.';
+        Promise.resolve(V.store.setUserRole(u.id, newRole, newRole === 'heritage' ? newTier : null)).then(function () {
           if (V.logActivity) V.logActivity('role-changed', u.name + ' → ' + newRole);
-          setTimeout(function () { render(); }, 1000);
+          var ov = document.createElement('div');
+          ov.className = 'reg-overlay';
+          ov.innerHTML = '<div class="ro-stage"><span class="ro-ring" aria-hidden="true"></span><img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva"></div>';
+          document.body.appendChild(ov);
+          requestAnimationFrame(function () { ov.classList.add('show'); });
+          setTimeout(function () { try { ov.remove(); } catch (e) {} location.hash = '#users'; render(); }, 1600);
         }).catch(function (e) {
           if (roleBtn) roleBtn.disabled = false;
           roleMsg.style.color = 'var(--minerva-red-bright)';
@@ -642,8 +660,7 @@
             : 'Could not change the account type. Please try again.';
         });
       }
-      roleForm.addEventListener('submit', goRole);
-      roleBtn.addEventListener('click', goRole);
+      if (roleBtn) roleBtn.addEventListener('click', goRole);
     }
   }
 
@@ -1539,7 +1556,7 @@
     // The bridge loads the live (async) Supabase data in the background and fires
     // this when its cache changes; re-render the current view so the user list /
     // dashboard counts fill in without a manual refresh.
-    window.addEventListener('minerva-admin-refresh', function () { try { render(); } catch (e) {} });
+    window.addEventListener('minerva-admin-refresh', function () { try { var h = (location.hash || '').replace('#', ''); if (h === 'help' || h === 'faq') return; render(); } catch (e) {} });
     // "Show records" page-size dropdown under any list → refresh immediately
     root.addEventListener('change', function (e) {
       var sel = e.target.closest && e.target.closest('.pagesize-sel');

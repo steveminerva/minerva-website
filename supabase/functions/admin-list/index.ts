@@ -35,8 +35,7 @@ Deno.serve(async (req) => {
 
   const { data: profiles, error } = await admin
     .from("profiles")
-    .select("id, no, name, email, end_date, cancelled_at, invite_sent_at, created_at")
-    .eq("is_admin", false)
+    .select("id, no, name, email, end_date, cancelled_at, invite_sent_at, created_at, is_admin, tier, status")
     .order("no", { ascending: true });
   if (error) return json({ error: error.message }, 400);
 
@@ -50,10 +49,12 @@ Deno.serve(async (req) => {
     const expired = !!(p.end_date && p.end_date < today);
     const cancelled = !!p.cancelled_at;
     const status = cancelled ? "cancelled" : (!p.end_date ? "active" : (expired ? "expired" : "active"));
+    const role = p.is_admin ? "admin" : (p.tier ? "heritage" : "vip");
     return {
       id: p.id, no: p.no, name: p.name, email: p.email,
       endDate: p.end_date, cancelledAt: p.cancelled_at, inviteSentAt: p.invite_sent_at,
       createdAt: p.created_at, lastLogin: lastLogin[p.id] || null, expired, cancelled, status,
+      role, tier: p.tier || null, isAdmin: !!p.is_admin,
     };
   });
   return json({ ok: true, users: rows });
