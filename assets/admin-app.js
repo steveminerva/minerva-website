@@ -1556,7 +1556,10 @@
     // The bridge loads the live (async) Supabase data in the background and fires
     // this when its cache changes; re-render the current view so the user list /
     // dashboard counts fill in without a manual refresh.
-    window.addEventListener('minerva-admin-refresh', function () { try { var h = (location.hash || '').replace('#', ''); if (h === 'help' || h === 'faq') return; render(); } catch (e) {} });
+    // Don't auto-re-render interactive form/chat pages — it would wipe in-progress
+    // input (the concierge chat, the user-detail role/extend forms, the New User form).
+    // These update explicitly after an action.
+    window.addEventListener('minerva-admin-refresh', function () { try { var h = (location.hash || '').replace('#', ''); if (h === 'help' || h === 'faq' || h === 'user' || h === 'new') return; render(); } catch (e) {} });
     // "Show records" page-size dropdown under any list → refresh immediately
     root.addEventListener('change', function (e) {
       var sel = e.target.closest && e.target.closest('.pagesize-sel');

@@ -111,6 +111,7 @@
   <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
 
   <script src="assets/i18n.js"></script>
+  <script src="assets/heritage-i18n.js"></script>
   <script src="assets/minerva.js"></script>
   <script>
     (function () {
@@ -208,6 +209,23 @@
   <script>
     (function () {
       function curLang() { try { return (window.MinervaI18n && window.MinervaI18n.lang) || 'en'; } catch (e) { return 'en'; } }
+      function H(k, vars) { try { return window.MinervaHeritageL10n ? window.MinervaHeritageL10n.t(k, window.MinervaHeritageL10n.pickLang(), vars) : k; } catch (e) { return k; } }
+      function setText(sel, key) { var el = document.querySelector(sel); if (el) el.textContent = H(key); }
+      function localizeReg() {
+        var c = document.getElementById('registerCard'); if (!c) return;
+        setText('#registerCard label[for="rName"]', 'reg.name');
+        setText('#registerCard label[for="rEmail"]', 'reg.email');
+        setText('#registerCard label[for="rPw"]', 'reg.password');
+        setText('#registerCard label[for="rVin"]', 'reg.vin');
+        var qo = c.querySelector('#qOwn'); if (qo && qo.closest('.field')) { var ql = qo.closest('.field').querySelector('label'); if (ql) ql.textContent = H('reg.qOwn'); }
+        var qc = c.querySelector('#qComm'); if (qc && qc.closest('.field')) { var ql2 = qc.closest('.field').querySelector('label'); if (ql2) ql2.textContent = H('reg.qComm'); }
+        [].forEach.call(c.querySelectorAll('.reg-seg button'), function (b) { var v = b.getAttribute('data-v'); b.textContent = H(v === 'yes' ? 'reg.yes' : 'reg.no'); });
+        var hint = c.querySelector('.reg-hint'); if (hint) hint.textContent = H('reg.vinHint');
+        var rb = document.getElementById('registerBtn'); if (rb) rb.textContent = H('reg.submit');
+        var tl = document.getElementById('toLogin'); if (tl) tl.textContent = H('reg.back');
+        var tr = document.getElementById('toRegister'); if (tr) tr.textContent = H('reg.cta');
+        var dn = document.getElementById('regDoneBtn'); if (dn) dn.textContent = H('reg.back');
+      }
       var loginCard = document.getElementById('loginForm');
       var regCard = document.getElementById('registerCard');
       var doneCard = document.getElementById('registerDone');
@@ -238,7 +256,7 @@
       function syncTier() {
         var t = tier();
         var el = document.getElementById('rTier');
-        if (el) el.innerHTML = 'You will join as ' + (t === 'admirer' ? 'an' : 'a') + ' <b>' + TLABEL[t] + '</b>.';
+        if (el) el.textContent = H('reg.joinAs', { art: H(t === 'admirer' ? 'reg.an' : 'reg.a'), tier: H('tier.' + t), extra: H(t === 'admirer' ? 'reg.instant' : 'reg.reviewed') });
         var vin = document.getElementById('rVinBlock'); if (vin) vin.hidden = (t === 'admirer');
       }
       function seg(id, set) {
@@ -252,6 +270,8 @@
       }
       seg('qOwn', function (v) { own = v; });
       seg('qComm', function (v) { comm = v; });
+      localizeReg(); syncTier();
+      window.addEventListener('minervalang', function () { localizeReg(); syncTier(); });
 
       var tReg = document.getElementById('toRegister'); if (tReg) tReg.addEventListener('click', function () { show('reg'); });
       var tLog = document.getElementById('toLogin'); if (tLog) tLog.addEventListener('click', function () { show('login'); });
@@ -265,10 +285,10 @@
         var pw = document.getElementById('rPw').value || '';
         var vin = (document.getElementById('rVin').value || '').trim();
         var t = tier();
-        if (!name) { err.textContent = 'Please enter your name'; return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Please enter a valid email'; return; }
-        if (pw.length < 8) { err.textContent = 'Password must be at least 8 characters'; return; }
-        if (t !== 'admirer' && !vin) { err.textContent = 'Please enter your vehicle VIN'; return; }
+        if (!name) { err.textContent = H('reg.errName'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = H('reg.errEmail'); return; }
+        if (pw.length < 8) { err.textContent = H('reg.errPw'); return; }
+        if (t !== 'admirer' && !vin) { err.textContent = H('reg.errVin'); return; }
         var CFG = window.MINERVA_SUPABASE || {};
         if (!CFG.url || !CFG.anonKey) { err.textContent = 'Service unavailable — please try again in a moment'; return; }
         if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
@@ -278,23 +298,21 @@
           body: JSON.stringify({ name: name, email: email, password: pw, ownsMinerva: own === 'yes', hasCommission: comm === 'yes', vin: vin || null, lang: curLang() })
         }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
           .then(function (res) {
-            if (btn) { btn.disabled = false; btn.textContent = 'Apply for membership'; }
+            if (btn) { btn.disabled = false; btn.textContent = H('reg.submit'); }
             if (!res.ok || (res.b && res.b.error)) {
               var e = res.b && res.b.error;
-              err.textContent = e === 'email-taken' ? 'That email is already registered — please sign in instead.'
-                : e === 'vin-required' ? 'Please enter your vehicle VIN'
-                : e === 'password-weak' ? 'Password must be at least 8 characters'
+              err.textContent = e === 'email-taken' ? H('reg.errExists')
+                : e === 'vin-required' ? H('reg.errVin')
+                : e === 'password-weak' ? H('reg.errPw')
                 : 'We could not complete your application. Please try again.';
               return;
             }
             var active = res.b && res.b.status === 'active';
-            document.getElementById('regDoneH').textContent = active ? 'Welcome to Minerva' : 'Application received';
-            document.getElementById('regDoneB').textContent = active
-              ? 'Your Admirer membership is active. You can now sign in to the Heritage portal.'
-              : ('Thank you, ' + name + '. Minerva will review your ' + TLABEL[t] + ' application and confirm by email. You may sign in once approved.');
+            document.getElementById('regDoneH').textContent = active ? H('reg.okTitle') : H('reg.pendTitle');
+            document.getElementById('regDoneB').textContent = active ? H('reg.okBody') : H('reg.pendBody', { name: name, tier: H('tier.' + t) });
             show('done');
           }).catch(function () {
-            if (btn) { btn.disabled = false; btn.textContent = 'Apply for membership'; }
+            if (btn) { btn.disabled = false; btn.textContent = H('reg.submit'); }
             err.textContent = 'We could not complete your application. Please try again.';
           });
       }

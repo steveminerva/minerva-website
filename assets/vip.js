@@ -522,9 +522,7 @@
     var tierTxt = T('app.tier.' + tk, tk.charAt(0).toUpperCase() + tk.slice(1));
     var stateTxt = pending
       ? esc(T('app.member.review', 'Membership under review'))
-      : ((_profile && _profile.membership_end)
-          ? esc(T('app.member.renews', 'Member · renews')) + ' <strong>' + esc(fmtDateLoc(_profile.membership_end)) + '</strong>'
-          : esc(T('app.member.active', 'Member in good standing')));
+      : esc(T('app.member.active', 'Member in good standing')) + ((_profile && _profile.membership_end) ? ' · <strong>' + esc(fmtDateLoc(_profile.membership_end)) + '</strong>' : '');
     var b = document.createElement('div');
     b.className = 'vip-banner';
     b.setAttribute('role', 'status');
