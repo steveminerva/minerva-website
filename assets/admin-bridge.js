@@ -47,6 +47,27 @@
       return null;
     })();
 
+    // Authenticated DATA client for the Phase-2 tables (vehicles / models / certs).
+    // The _sb client above can read the session but does not attach the admin's JWT
+    // to PostgREST calls, so RLS (admins only) would hide every row. This client
+    // derives a fresh access token from the shared session on each request, so the
+    // database sees the signed-in admin. Reads stay current even as the token rotates.
+    var _db = (function () {
+      try {
+        var CFG = window.MINERVA_SUPABASE || {};
+        if (window.supabase && _sb && CFG.url && CFG.anonKey) {
+          return window.supabase.createClient(CFG.url, CFG.anonKey, {
+            accessToken: function () {
+              return _sb.auth.getSession().then(function (r) {
+                return (r && r.data && r.data.session && r.data.session.access_token) || null;
+              }).catch(function () { return null; });
+            }
+          });
+        }
+      } catch (e) {}
+      return null;
+    })();
+
     function resolveSessionEmail() {
       if (!_sb) return Promise.resolve(null);
       return _sb.auth.getSession().then(function (res) {
@@ -221,10 +242,10 @@
     // DB column  ->  SPA record-field maps (SPA keys match VEH_FIELDS).
     function mapVehicleRow(r) {
       return { id: r.id, vin: r.vin || '', firstReg: r.first_reg || '', model: r.model || '',
-               modelDate: r.model_date || '', owner: r.owner || '', email: r.email || '' };
+               modelDate: (r.model_date != null ? r.model_date : ''), owner: r.owner || '', email: r.email || '' };
     }
     function mapModelRow(r) {
-      return { id: r.id, name: r.name || '', line: r.line || '', launch: r.launch || '',
+      return { id: r.id, name: r.name || '', line: r.line || '', launch: (r.launch != null ? r.launch : ''),
                power: r.power || '', units: (r.units != null ? r.units : ''), status: r.status || '' };
     }
     function mapCoaRow(r) {
@@ -236,20 +257,20 @@
     function i(v) { v = (v == null ? '' : String(v)).trim(); if (!v) return null; var x = parseInt(v, 10); return isNaN(x) ? null : x; }
 
     function refreshVehicles() {
-      if (!_sb) return Promise.resolve(_vehicles);
-      return _sb.from('vehicles').select('*').order('created_at', { ascending: false })
+      if (!_db) return Promise.resolve(_vehicles);
+      return _db.from('vehicles').select('*').order('created_at', { ascending: false })
         .then(function (res) { if (res && !res.error && res.data) { _vehicles = res.data.map(mapVehicleRow); repaint(); } return _vehicles; })
         .catch(function () { return _vehicles; });
     }
     function refreshModels() {
-      if (!_sb) return Promise.resolve(_models);
-      return _sb.from('vehicle_models').select('*').order('created_at', { ascending: false })
+      if (!_db) return Promise.resolve(_models);
+      return _db.from('vehicle_models').select('*').order('created_at', { ascending: false })
         .then(function (res) { if (res && !res.error && res.data) { _models = res.data.map(mapModelRow); repaint(); } return _models; })
         .catch(function () { return _models; });
     }
     function refreshCoa() {
-      if (!_sb) return Promise.resolve(_coa);
-      return _sb.from('certificates').select('*').order('created_at', { ascending: false })
+      if (!_db) return Promise.resolve(_coa);
+      return _db.from('certificates').select('*').order('created_at', { ascending: false })
         .then(function (res) { if (res && !res.error && res.data) { _coa = res.data.map(mapCoaRow); repaint(); } return _coa; })
         .catch(function () { return _coa; });
     }
@@ -265,10 +286,10 @@
 
     function addVehicle(rec) {
       rec = rec || {};
-      if (!_sb) return Promise.reject(new Error('store-unavailable'));
-      return _sb.from('vehicles').insert({
+      if (!_db) return Promise.reject(new Error('store-unavailable'));
+      return _db.from('vehicles').insert({
         vin: s(rec.vin), first_reg: s(rec.firstReg), model: s(rec.model),
-        model_date: s(rec.modelDate), owner: s(rec.owner), email: s(rec.email)
+        model_date: i(rec.modelDate), owner: s(rec.owner), email: s(rec.email)
       }).then(function (res) {
         if (res && res.error) throw new Error(res.error.message || 'Could not save vehicle.');
         return refreshVehicles();
@@ -276,9 +297,9 @@
     }
     function addModel(rec) {
       rec = rec || {};
-      if (!_sb) return Promise.reject(new Error('store-unavailable'));
-      return _sb.from('vehicle_models').insert({
-        name: s(rec.name), line: s(rec.line), launch: s(rec.launch),
+      if (!_db) return Promise.reject(new Error('store-unavailable'));
+      return _db.from('vehicle_models').insert({
+        name: s(rec.name), line: s(rec.line), launch: i(rec.launch),
         power: s(rec.power), units: i(rec.units), status: s(rec.status)
       }).then(function (res) {
         if (res && res.error) throw new Error(res.error.message || 'Could not save model.');
@@ -287,8 +308,8 @@
     }
     function addCoa(rec) {
       rec = rec || {};
-      if (!_sb) return Promise.reject(new Error('store-unavailable'));
-      return _sb.from('certificates').insert({
+      if (!_db) return Promise.reject(new Error('store-unavailable'));
+      return _db.from('certificates').insert({
         ref: s(rec.ref), vin: s(rec.vin), model: s(rec.model),
         issued: s(rec.issued), owner: s(rec.owner), status: s(rec.status)
       }).then(function (res) {

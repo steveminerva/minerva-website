@@ -719,6 +719,13 @@
   function ffInput(id, label, type, extra) {
     return '<div class="ff"><label for="vf_' + id + '">' + esc(label) + '</label><div class="ff-input"><input id="vf_' + id + '" type="' + type + '"' + (type === 'date' ? '' : ' placeholder="' + esc(label) + '"') + (extra || '') + '></div></div>';
   }
+  // Year-only picker (past years; no month/day). Used for model "First made" and vehicle "Model date".
+  function ffYear(id, label, disabled) {
+    var now = new Date().getFullYear();
+    var opts = '<option value="">Year…</option>';
+    for (var y = now; y >= 1900; y--) opts += '<option value="' + y + '">' + y + '</option>';
+    return '<div class="ff"><label for="vf_' + id + '">' + esc(label) + '</label><div class="ff-input"><select id="vf_' + id + '" class="ff-select"' + (disabled ? ' disabled' : '') + '>' + opts + '</select></div></div>';
+  }
   function vehNewForm() {
     var title = vehTab === 'models' ? 'New vehicle model' : (vehTab === 'coa' ? 'New certificate' : 'New registered vehicle');
     var grid;
@@ -733,12 +740,12 @@
         + ffInput('vin', 'VIN', 'text')
         + ffInput('firstReg', 'First registration', 'date')
         + '<div class="ff"><label for="vf_model_select">Model</label><div class="ff-input"><select id="vf_model_select" class="ff-select">' + opts + '</select></div></div>'
-        + ffInput('modelDate', 'Model date', 'date', ' readonly')
+        + ffYear('modelDate', 'Model date', true)
         + ffInput('owner', 'Owner', 'text')
         + ffInput('email', 'Email', 'email')
         + '<div class="ff" id="vfOtherWrap" style="display:none;"><label for="vf_modelOther">New model name</label><div class="ff-input"><input id="vf_modelOther" type="text" placeholder="Model name"></div></div>';
     } else {
-      grid = VEH_FIELDS[vehTab].map(function (f) { return ffInput(f[0], f[1], f[2]); }).join('');
+      grid = VEH_FIELDS[vehTab].map(function (f) { return f[0] === 'launch' ? ffYear(f[0], f[1]) : ffInput(f[0], f[1], f[2]); }).join('');
     }
     return '<form class="veh-newform" id="vehForm" onsubmit="return false;">'
       + '<p class="adm-section-h" style="margin:0 0 14px;">' + title + '</p>'
@@ -763,7 +770,7 @@
             return '<div class="adm-row veh-row" style="--cols:' + cols + '"><span class="veh-vin">' + esc(v.vin) + '</span>'
               + '<span class="veh-c">' + esc(v.firstReg ? V.fmtDate(v.firstReg) : '\u2014') + '</span>'
               + '<span class="veh-model">' + esc(v.model) + '</span>'
-              + '<span class="veh-c">' + esc(v.modelDate ? V.fmtDate(v.modelDate) : '\u2014') + '</span>'
+              + '<span class="veh-c">' + esc(v.modelDate ? String(v.modelDate) : '\u2014') + '</span>'
               + '<span class="veh-c">' + esc(v.owner || '\u2014') + '</span>'
               + '<span class="veh-email">' + esc(v.email || '\u2014') + '</span></div>';
           }).join('') : '<p class="adm-empty">No vehicles match.</p>')
@@ -775,7 +782,7 @@
         + (models.length ? models.slice((vehPage - 1) * pageSize, vehPage * pageSize).map(function (m) {
             return '<div class="adm-row veh-row" style="--cols:' + mcols + '"><span class="veh-model">' + esc(m.name) + '</span>'
               + '<span class="veh-c">' + esc(m.line) + '</span>'
-              + '<span class="veh-c">' + esc(m.launch ? V.fmtDate(m.launch) : '\u2014') + '</span>'
+              + '<span class="veh-c">' + esc(m.launch ? String(m.launch) : '\u2014') + '</span>'
               + '<span class="veh-c">' + esc(m.power || '\u2014') + '</span>'
               + '<span class="veh-c">' + esc(String(m.units != null ? m.units : '\u2014')) + '</span>'
               + '<span class="veh-c">' + esc(m.status || '\u2014') + '</span></div>';
@@ -826,14 +833,14 @@
         var val = vmSel.value;
         if (val === '__other__') {
           if (otherWrap) otherWrap.style.display = '';
-          if (mdInput) { mdInput.removeAttribute('readonly'); mdInput.value = ''; }
+          if (mdInput) { mdInput.disabled = false; mdInput.value = ''; }
         } else if (val === '') {
           if (otherWrap) otherWrap.style.display = 'none';
-          if (mdInput) { mdInput.setAttribute('readonly', ''); mdInput.value = ''; }
+          if (mdInput) { mdInput.disabled = true; mdInput.value = ''; }
         } else {
           if (otherWrap) otherWrap.style.display = 'none';
           var m = modelsByName[val];
-          if (mdInput) { mdInput.setAttribute('readonly', ''); mdInput.value = (m && m.launch) ? m.launch : ''; }
+          if (mdInput) { mdInput.disabled = true; mdInput.value = (m && m.launch != null && m.launch !== '') ? String(m.launch) : ''; }
         }
       });
     }
