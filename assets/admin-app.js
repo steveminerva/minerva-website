@@ -331,6 +331,95 @@
       + '<button type="button" class="au-pg" id="' + nextId + '"' + (page >= totalPages ? ' disabled' : '') + '>Next \u2192</button>'
       + '</div>' + sizeSelect();
   }
+  /* ---------------- HERITAGE MEMBERS (review + decision) ---------------- */
+  var TIER_LABEL = { admirer: 'Admirer', custodian: 'Custodian', commissioner: 'Commissioner' };
+  function renderHeritage() {
+    topBar.hidden = false;
+    var members = (V.heritageMembers ? V.heritageMembers() : []);
+    var pending = members.filter(function (m) { return m.status === 'pending'; });
+    var active = members.filter(function (m) { return m.status === 'active'; });
+    var other = members.filter(function (m) { return m.status !== 'pending' && m.status !== 'active'; });
+
+    function chip(status) {
+      var c = status === 'active' ? '#3fb27f' : status === 'pending' ? '#c2a15a' : status === 'denied' ? '#c0556a' : '#8a8f98';
+      return '<span style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:' + c + ';border:1px solid ' + c + '55;padding:3px 8px;">' + esc(status || '—') + '</span>';
+    }
+    function memberCard(m) {
+      var actions;
+      if (m.status === 'pending') {
+        var tierSel = '<select class="ff-select hm-tier" style="flex:0 0 auto;">'
+          + ['admirer', 'custodian', 'commissioner'].map(function (t) { return '<option value="' + t + '"' + (m.tier === t ? ' selected' : '') + '>' + TIER_LABEL[t] + '</option>'; }).join('')
+          + '</select>';
+        actions = '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;">'
+          + '<label style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);">Confirm tier</label>'
+          + '<div class="ff-input" style="flex:0 0 auto;padding:0 10px;">' + tierSel + '</div></div>'
+          + '<textarea class="hm-comment" rows="2" placeholder="Optional note included in the decision email…" style="width:100%;margin-top:10px;background:#0a0b0d;border:1px solid var(--line);color:var(--fg);font-family:var(--sans);font-size:14px;padding:10px;box-sizing:border-box;"></textarea>'
+          + '<div style="display:flex;gap:10px;margin-top:10px;">'
+          + '<button class="btn hm-accept" type="button" data-id="' + esc(m.id) + '">Accept</button>'
+          + '<button class="btn-cancel hm-deny" type="button" data-id="' + esc(m.id) + '" style="border-color:#c0556a;color:#c0556a;">Deny</button></div>';
+      } else if (m.status === 'active') {
+        actions = '<div style="margin-top:12px;"><button class="btn-cancel hm-renew" type="button" data-id="' + esc(m.id) + '" style="border-color:var(--line);color:var(--fg-dim);">Renew 12 months</button></div>';
+      } else { actions = ''; }
+      return '<div class="hm-card" data-id="' + esc(m.id) + '" style="border:1px solid var(--line);padding:16px;margin-bottom:12px;background:linear-gradient(180deg,#070809,#050506);">'
+        + '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;">'
+        +   '<div><strong style="font-size:15px;">' + esc(m.name || '—') + '</strong> <span style="color:var(--fg-dim);font-size:13px;">' + esc(m.email) + '</span></div>'
+        +   '<div style="display:flex;gap:8px;align-items:center;">' + chip(m.status) + '<span style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--platinum-deep);">' + esc(TIER_LABEL[m.tier] || m.tier || '') + '</span></div></div>'
+        + (m.vin ? '<p style="color:var(--fg-dim);font-size:12px;margin:8px 0 0;font-family:var(--mono);letter-spacing:.08em;">VIN ' + esc(m.vin) + '</p>' : '')
+        + (m.membership_end ? '<p style="color:var(--fg-dim);font-size:12px;margin:4px 0 0;">Renews ' + esc(V.fmtDate(m.membership_end)) + '</p>' : '')
+        + actions
+        + '<p class="hm-result" style="display:none;margin-top:10px;font-size:13px;color:#3fb27f;"></p></div>';
+    }
+
+    var body = '<p class="adm-section-h" style="margin:18px 0 10px;">Pending applications (' + pending.length + ')</p>'
+      + (pending.length ? pending.map(memberCard).join('') : '<p class="adm-empty">No applications awaiting review.</p>')
+      + '<p class="adm-section-h" style="margin:26px 0 10px;">Active members (' + active.length + ')</p>'
+      + (active.length ? active.map(memberCard).join('') : '<p class="adm-empty">No active members yet.</p>')
+      + (other.length ? '<p class="adm-section-h" style="margin:26px 0 10px;">Denied / lapsed</p>' + other.map(memberCard).join('') : '');
+
+    root.innerHTML = '<div class="adm-wrap" data-screen-label="Heritage">'
+      + '<p class="adm-crumb"><span class="cr-here">Heritage members</span></p>'
+      + '<p class="adm-sub">Review applications, confirm the tier, and accept or deny. Accepting starts a 12-month membership and emails the applicant in their language.</p>'
+      + body + '</div>';
+    bindBack('#menu');
+
+    function cardOf(b) { return b.closest('.hm-card'); }
+    function lock(card, txt, ok) {
+      [].forEach.call(card.querySelectorAll('button,select,textarea'), function (el) { el.disabled = true; });
+      var r = card.querySelector('.hm-result'); if (r && txt) { r.style.display = 'block'; r.style.color = ok === false ? '#c0556a' : '#3fb27f'; r.textContent = txt; }
+    }
+    function unlock(card, msg) {
+      [].forEach.call(card.querySelectorAll('button,select,textarea'), function (el) { el.disabled = false; });
+      var r = card.querySelector('.hm-result'); if (r) { r.style.display = 'block'; r.style.color = '#c0556a'; r.textContent = msg || 'Could not complete. Try again.'; }
+    }
+    function wire(sel, run) { [].forEach.call(root.querySelectorAll(sel), function (b) { b.addEventListener('click', function () { run(b, cardOf(b)); }); }); }
+
+    wire('.hm-accept', function (b, card) {
+      var tier = card.querySelector('.hm-tier') ? card.querySelector('.hm-tier').value : null;
+      var comment = card.querySelector('.hm-comment') ? card.querySelector('.hm-comment').value : '';
+      lock(card, 'Accepting…');
+      Promise.resolve(V.store.approveMember(b.getAttribute('data-id'), comment, tier)).then(function (res) {
+        var sent = res && res.email ? (' · email sent: “' + res.email.subject + '”') : '';
+        lock(card, 'Accepted — 12-month membership started' + sent);
+        setTimeout(renderHeritage, 1500);
+      }).catch(function (e) { unlock(card, (e && e.message) || 'Could not accept.'); });
+    });
+    wire('.hm-deny', function (b, card) {
+      var comment = card.querySelector('.hm-comment') ? card.querySelector('.hm-comment').value : '';
+      lock(card, 'Recording…');
+      Promise.resolve(V.store.denyMember(b.getAttribute('data-id'), comment)).then(function () {
+        lock(card, 'Denied — applicant notified by email.');
+        setTimeout(renderHeritage, 1500);
+      }).catch(function (e) { unlock(card, (e && e.message) || 'Could not deny.'); });
+    });
+    wire('.hm-renew', function (b, card) {
+      lock(card, 'Renewing…');
+      Promise.resolve(V.store.renewMember(b.getAttribute('data-id'))).then(function () {
+        lock(card, 'Renewed for 12 months.');
+        setTimeout(renderHeritage, 1500);
+      }).catch(function (e) { unlock(card, (e && e.message) || 'Could not renew.'); });
+    });
+  }
+
   function renderUsers() {
     topBar.hidden = false;
     var sup = V.isSuperAdmin();
@@ -1034,12 +1123,14 @@
     audit: '<path d="M5 4h14v16l-3-2-2 2-2-2-2 2-2-2-3 2zM8 9h8M8 13h6"/>',
     counters: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/>',
-    help: '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4 1.8c0 1.5-2 2-2 3.2"/><circle cx="12" cy="17" r="0.5"/>'
+    help: '<circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4 1.8c0 1.5-2 2-2 3.2"/><circle cx="12" cy="17" r="0.5"/>',
+    heritage: '<path d="M12 3l7 2.5v5.5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V5.5z"/><path d="M9.5 12l1.8 1.8L15 10"/>'
   };
   // [route, label, iconKey, children?]  children = [[route,label],...]
   var NAV = [
     ['dashboard', 'Dashboard', 'dashboard'],
     ['users', 'Users', 'users', [['users', 'All users'], ['new', 'New user']]],
+    ['heritage', 'Heritage', 'heritage'],
     ['vehicles', 'Vehicles', 'vehicles', [['vehicles', 'Registered vehicles'], ['vmodels', 'Vehicle models'], ['vcerts', 'Certificates']]],
     ['stats', 'Web Statistics', 'stats'],
     ['counters', 'Counters', 'counters'],
@@ -1298,6 +1389,7 @@
     if (h === 'new') return renderNew();
     if (h === 'created') return renderCreated();
     if (h === 'users') { usersPage = 1; return renderUsers(); }
+    if (h === 'heritage') return renderHeritage();
     if (h === 'audit') return renderAudit();
     if (h === 'user') return renderUser();
     return renderDashboard();   // sidebar replaces the old card menu

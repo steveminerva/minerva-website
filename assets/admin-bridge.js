@@ -370,6 +370,20 @@
         .catch(function () { return _membersCount; });
     }
 
+    // Full member list (admin Heritage view) — profiles that have a tier.
+    var _memberList = [];
+    function mapMemberRow(p) {
+      return { id: p.id, name: p.name || '', email: p.email || '', tier: p.tier || '', status: p.status || '',
+               vin: p.vin || '', membership_end: p.membership_end || null, created_at: p.created_at || null };
+    }
+    function refreshMemberList() {
+      if (!_db) return Promise.resolve(_memberList);
+      return _db.from('profiles').select('id,name,email,tier,status,vin,membership_end,created_at').not('tier', 'is', null).order('created_at', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _memberList = res.data.map(mapMemberRow); repaint(); } return _memberList; })
+        .catch(function () { return _memberList; });
+    }
+    function heritageMembers() { return _memberList.slice(); }
+
     function isHeritage()    { return !!(_profile && _profile.tier && !_profile.is_admin); }
     function memberTier()    { return _profile ? (_profile.tier || null) : null; }
     function memberPending() { return !!(_profile && _profile.status === 'pending'); }
@@ -450,15 +464,15 @@
       var owns = tier === 'custodian', comm = tier === 'commissioner';
       return callFn('heritage-register', { name: name, email: email, password: pw, ownsMinerva: owns, hasCommission: comm, vin: vin || null, lang: lang || 'en' }, false);
     };
-    bridgeStore.approveMember = function (id, comment, tier) { return callFn('heritage-decision', { userId: id, action: 'accept', comment: comment || '', tier: tier || null }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
-    bridgeStore.denyMember = function (id, comment) { return callFn('heritage-decision', { userId: id, action: 'deny', comment: comment || '' }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
-    bridgeStore.renewMember = function (id) { return callFn('heritage-decision', { userId: id, action: 'accept' }, true).then(function (r) { refreshUsers(); refreshMembers(); return r; }); };
+    bridgeStore.approveMember = function (id, comment, tier) { return callFn('heritage-decision', { userId: id, action: 'accept', comment: comment || '', tier: tier || null }, true).then(function (r) { refreshUsers(); refreshMembers(); refreshMemberList(); return r; }); };
+    bridgeStore.denyMember = function (id, comment) { return callFn('heritage-decision', { userId: id, action: 'deny', comment: comment || '' }, true).then(function (r) { refreshUsers(); refreshMembers(); refreshMemberList(); return r; }); };
+    bridgeStore.renewMember = function (id) { return callFn('heritage-decision', { userId: id, action: 'accept' }, true).then(function (r) { refreshUsers(); refreshMembers(); refreshMemberList(); return r; }); };
 
     // Wait for the shared session to be recovered before the first read, so the very
     // first query is authenticated (avoids a transient anonymous read returning nothing).
     if (_db) {
       _db.auth.getSession()
-        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); })
+        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); })
         .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
     } else {
       refreshVehicles(); refreshModels(); refreshCoa();
@@ -484,6 +498,7 @@
       getModels: getModels, setModels: setModels, addModel: addModel,
       getCoa: getCoa, setCoa: setCoa, addCoa: addCoa,
       isHeritage: isHeritage, memberTier: memberTier, memberPending: memberPending,
+      heritageMembers: heritageMembers,
       getArchives: getArchives, setArchives: setArchives,
       getNews: getNews, setNews: setNews,
       getCounters: getCounters, setCounter: setCounter,
