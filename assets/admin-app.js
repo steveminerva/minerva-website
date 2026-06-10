@@ -1623,7 +1623,7 @@
     if (imp) imp.addEventListener('click', function (e) { e.preventDefault(); openImpersonatePicker(); });
     var topAsk = document.getElementById('admSearchInput');
     if (topAsk) topAsk.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); var q = (topAsk.value || '').trim(); if (!q) return; pendingConcierge = q; topAsk.value = ''; location.hash = '#help'; render(); }
+      if (e.key === 'Enter') { e.preventDefault(); var q = (topAsk.value || '').trim(); if (!q) return; pendingConcierge = q; topAsk.value = ''; if (location.hash === '#help' || location.hash === '#faq') { render(); } else { location.hash = '#help'; } }
     });
     render();
   });

@@ -346,7 +346,10 @@
 
     // Call an Edge Function. auth=true attaches the signed-in user's JWT.
     function callFn(name, payload, auth) {
-      return (auth && _sb ? _sb.auth.getSession() : Promise.resolve(null)).then(function (r) {
+      // Use the persisted-session client (_db) for the caller's JWT — _sb
+      // (persistSession:false) resolves the token unreliably.
+      var _authClient = _db || _sb;
+      return (auth && _authClient ? _authClient.auth.getSession() : Promise.resolve(null)).then(function (r) {
         var token = (r && r.data && r.data.session && r.data.session.access_token) || ANON;
         return fetch(FN_BASE + name, {
           method: 'POST',
