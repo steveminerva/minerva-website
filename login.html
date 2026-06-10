@@ -13,6 +13,7 @@
   .login-ok { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--platinum-bright); text-align: center; min-height: 14px; margin-top: 2px; }
   /* Heritage self-registration */
   [hidden] { display: none !important; }   /* .login-card sets display:flex, which otherwise overrides the hidden attribute */
+  .page-title.reg-mode { font-size: clamp(1.3rem, 4.5vw, 2.4rem) !important; line-height: 1.15; max-width: 16ch; margin-left: auto; margin-right: auto; }
   .reg-link { display:block; margin:14px auto 0; background:none; border:0; color:var(--platinum-deep); font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; cursor:pointer; }
   .reg-link:hover { color:var(--platinum-bright); }
   .reg-seg { display:flex; gap:8px; }
@@ -214,11 +215,23 @@
       var own = 'no', comm = 'no';
       var TLABEL = { admirer: 'Admirer', custodian: 'Custodian', commissioner: 'Commissioner' };
 
+      var titleEl = document.querySelector('.page-title');
       function show(which) {
         loginCard.hidden = which !== 'login';
         regCard.hidden = which !== 'reg';
         doneCard.hidden = which !== 'done';
         var tr = document.getElementById('toRegister'); if (tr) tr.hidden = which !== 'login';
+        if (titleEl) {
+          if (which === 'login') {
+            titleEl.textContent = 'LOGIN';
+            titleEl.setAttribute('data-i18n', 'login.title');
+            titleEl.classList.remove('reg-mode');
+          } else {
+            titleEl.textContent = 'Minerva Motors Heritage Membership';
+            titleEl.removeAttribute('data-i18n');   // don't let the i18n pass reset it
+            titleEl.classList.add('reg-mode');
+          }
+        }
         try { window.scrollTo(0, 0); } catch (e) {}
       }
       function tier() { return comm === 'yes' ? 'commissioner' : (own === 'yes' ? 'custodian' : 'admirer'); }
