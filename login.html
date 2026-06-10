@@ -25,6 +25,15 @@
   .reg-ok { text-align:center; padding:10px 0; }
   .reg-ok .ro-h { font-size:clamp(1.3rem,3vw,1.9rem); letter-spacing:.03em; margin-bottom:12px; }
   .reg-ok .ro-b { font-weight:300; color:var(--fg-dim); line-height:1.65; max-width:40ch; margin:0 auto 18px; }
+  /* show/hide password */
+  .pw-wrap { position: relative; display: flex; align-items: center; }
+  .pw-wrap input { flex: 1; padding-right: 40px; }
+  .pw-eye { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--mute); cursor: pointer; padding: 6px; display: flex; }
+  .pw-eye:hover { color: var(--fg); }
+  .pw-eye svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .pw-eye .eye-off { display: none; }
+  .pw-eye.on .eye-on { display: none; }
+  .pw-eye.on .eye-off { display: block; }
 </style>
 </head>
 <body class="inner">
@@ -81,7 +90,7 @@
       </div>
       <div class="field">
         <label for="pw" data-i18n="login.password">Password</label>
-        <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password">
+        <div class="pw-wrap"><input id="pw" type="password" placeholder="••••••••" autocomplete="current-password"><button type="button" class="pw-eye" data-eye="pw" aria-label="Show password"><svg class="eye-on" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.2A11 11 0 0 1 12 5c7 0 11 7 11 7a18.4 18.4 0 0 1-3.2 3.8M6.2 6.3A18.3 18.3 0 0 0 1 12s4 7 11 7a11 11 0 0 0 3.8-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div>
       </div>
       <p class="login-error" id="loginError" role="alert"></p>
       <button class="btn" type="submit" id="loginBtn" data-i18n="login.enter">Enter</button>
@@ -91,7 +100,7 @@
     <form class="login-card" id="registerCard" autocomplete="off" onsubmit="return false;" hidden>
       <div class="field"><label for="rName">Full name</label><input id="rName" type="text" placeholder="Your name" autocomplete="name"></div>
       <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
-      <div class="field"><label for="rPw">Choose a password</label><input id="rPw" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <div class="field"><label for="rPw">Choose a password</label><div class="pw-wrap"><input id="rPw" type="password" placeholder="At least 8 characters" autocomplete="new-password"><button type="button" class="pw-eye" data-eye="rPw" aria-label="Show password"><svg class="eye-on" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.2A11 11 0 0 1 12 5c7 0 11 7 11 7a18.4 18.4 0 0 1-3.2 3.8M6.2 6.3A18.3 18.3 0 0 0 1 12s4 7 11 7a11 11 0 0 0 3.8-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></div></div>
       <div class="field"><label>Do you own a Minerva?</label><div class="reg-seg" id="qOwn"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
       <div class="field"><label>An outstanding new-vehicle commission?</label><div class="reg-seg" id="qComm"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
       <div class="field" id="rVinBlock" hidden><label for="rVin">Vehicle VIN</label><input id="rVin" type="text" placeholder="The VIN of your Minerva"><p class="reg-hint">Minerva will verify this against the register.</p></div>
@@ -317,6 +326,18 @@
           });
       }
       if (btn) btn.addEventListener('click', register);
+
+      // show/hide password toggles (login + registration)
+      [].forEach.call(document.querySelectorAll('.pw-eye'), function (eye) {
+        eye.addEventListener('click', function () {
+          var inp = document.getElementById(eye.getAttribute('data-eye'));
+          if (!inp) return;
+          var reveal = inp.type === 'password';
+          inp.type = reveal ? 'text' : 'password';
+          eye.classList.toggle('on', reveal);
+          eye.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+        });
+      });
     })();
   </script>
 </body>
