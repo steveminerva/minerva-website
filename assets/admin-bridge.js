@@ -48,20 +48,17 @@
     })();
 
     // Authenticated DATA client for the Phase-2 tables (vehicles / models / certs).
-    // The _sb client above can read the session but does not attach the admin's JWT
-    // to PostgREST calls, so RLS (admins only) would hide every row. This client
-    // derives a fresh access token from the shared session on each request, so the
-    // database sees the signed-in admin. Reads stay current even as the token rotates.
+    // It shares vip.js's persisted login session (same default storage key), so its
+    // PostgREST calls run as the signed-in admin (role `authenticated`) — exactly what
+    // the table GRANTs and RLS (admins only) require. This is the same mechanism the
+    // working Users store uses. autoRefreshToken:false so only vip.js rotates the
+    // token; this client picks up the rotated token from shared storage.
     var _db = (function () {
       try {
         var CFG = window.MINERVA_SUPABASE || {};
-        if (window.supabase && _sb && CFG.url && CFG.anonKey) {
+        if (window.supabase && CFG.url && CFG.anonKey) {
           return window.supabase.createClient(CFG.url, CFG.anonKey, {
-            accessToken: function () {
-              return _sb.auth.getSession().then(function (r) {
-                return (r && r.data && r.data.session && r.data.session.access_token) || null;
-              }).catch(function () { return null; });
-            }
+            auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
           });
         }
       } catch (e) {}
@@ -318,7 +315,15 @@
       });
     }
 
-    refreshVehicles(); refreshModels(); refreshCoa();   // initial loads
+    // Wait for the shared session to be recovered before the first read, so the very
+    // first query is authenticated (avoids a transient anonymous read returning nothing).
+    if (_db) {
+      _db.auth.getSession()
+        .then(function () { refreshVehicles(); refreshModels(); refreshCoa(); })
+        .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
+    } else {
+      refreshVehicles(); refreshModels(); refreshCoa();
+    }
 
     /* ----- still-not-wired sections (Phase 3/4): safe stubs (never throw) ----- */
     function getMembersCount() { return null; }   // -> "Coming soon" tile (Phase 3)
