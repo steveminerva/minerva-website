@@ -35,6 +35,7 @@
   // login.html / admin.html keep working with the same method names.
   var _profile = null;   // the caller's profiles row (VIP) — null for anon/admin
   var _isAdmin = false;  // true when the signed-in user's profile.is_admin
+  var _isHeritage = false; // true when the signed-in user is a Heritage member (profile.tier set, not admin)
   var _ready = false;    // becomes true after the first session resolution
   var _readyWaiters = [];
 
@@ -180,19 +181,20 @@
      Reads the current Supabase session and caches the caller's profile +
      admin flag. Safe to call repeatedly (e.g. on auth state change). */
   function refreshSession() {
-    if (!sb) { _profile = null; _isAdmin = false; return Promise.resolve(); }
+    if (!sb) { _profile = null; _isAdmin = false; _isHeritage = false; return Promise.resolve(); }
     return sb.auth.getSession().then(function (res) {
       var session = res && res.data ? res.data.session : null;
-      if (!session || !session.user) { _profile = null; _isAdmin = false; return; }
+      if (!session || !session.user) { _profile = null; _isAdmin = false; _isHeritage = false; return; }
       return sb.from('profiles')
-        .select('id, no, name, email, end_date, cancelled_at, invite_sent_at, is_admin, lang')
+        .select('id, no, name, email, end_date, cancelled_at, invite_sent_at, is_admin, lang, tier, status, membership_end')
         .eq('id', session.user.id).single()
         .then(function (pr) {
           var p = pr && pr.data ? pr.data : null;
-          if (p && p.is_admin) { _isAdmin = true; _profile = p; }
-          else { _isAdmin = false; _profile = p; }
+          _isAdmin = !!(p && p.is_admin);
+          _isHeritage = !!(p && p.tier && !p.is_admin);
+          _profile = p;
         });
-    }).catch(function () { _profile = null; _isAdmin = false; });
+    }).catch(function () { _profile = null; _isAdmin = false; _isHeritage = false; });
   }
 
   /* ---------------- public getters (sync, read the cache) ---------------- */
@@ -202,6 +204,7 @@
   // A signed-in VIP whose access is still valid (grants access). Shaped for UI.
   function currentVip() {
     if (_isAdmin) return null;
+    if (_profile && _profile.tier) return null;   // Heritage members are not VIPs
     if (_profile && profileHasAccess(_profile)) return shapeProfileForBanner(_profile);
     return null;
   }
@@ -212,7 +215,12 @@
     return null;
   }
   function isAdmin() { return !!_isAdmin; }
-  function hasAccess() { return _isAdmin || !!currentVip(); }
+  function isHeritage() { return !!_isHeritage; }
+  function memberTier() { return _profile ? (_profile.tier || null) : null; }
+  function memberStatus() { return _profile ? (_profile.status || null) : null; }
+  function memberPending() { return !!(_profile && _profile.status === 'pending'); }
+  function heritageActive() { return !!(_isHeritage && _profile && _profile.status === 'active' && (!_profile.membership_end || todayStr() <= _profile.membership_end)); }
+  function hasAccess() { return _isAdmin || !!currentVip() || heritageActive(); }
 
   /* ---------------- auth actions (async) ---------------- */
   // Super-admin: sign in, then confirm the profile is_admin. No password is
@@ -240,11 +248,15 @@
         if (res.error || !res.data || !res.data.user) return { ok: false, reason: 'invalid' };
         var uid = res.data.user.id;
         return sb.from('profiles')
-          .select('id, name, email, end_date, cancelled_at')
+          .select('id, name, email, end_date, cancelled_at, tier, status')
           .eq('id', uid).single()
           .then(function (pr) {
             var p = pr && pr.data ? pr.data : null;
             if (!p) { return sb.auth.signOut().then(function () { return { ok: false, reason: 'invalid' }; }); }
+            if (p.tier) {
+              // Heritage member — valid session; routed to the member portal (not the VIP website).
+              return refreshSession().then(function () { return { ok: true, heritage: true, tier: p.tier, status: p.status, user: shapeProfileForBanner(p) }; });
+            }
             if (p.cancelled_at) { return sb.auth.signOut().then(function () { return { ok: false, reason: 'cancelled', user: shapeProfileForBanner(p) }; }); }
             if (isExpired(p)) { return sb.auth.signOut().then(function () { return { ok: false, reason: 'expired', user: shapeProfileForBanner(p) }; }); }
             // Valid — cache + log the login.
@@ -273,7 +285,7 @@
   }
 
   function signOutVip() {
-    var done = function () { _profile = null; _isAdmin = false; };
+    var done = function () { _profile = null; _isAdmin = false; _isHeritage = false; };
     if (!sb) { done(); return Promise.resolve(); }
     return sb.auth.signOut().then(done, done);
   }
@@ -284,6 +296,7 @@
     fmtDate: fmtDate, fmtDateTime: fmtDateTime,
     currentVip: currentVip, expiredVip: expiredVip, authVip: authVip, loginByInvite: loginByInvite, signOutVip: signOutVip,
     adminLogin: adminLogin, isAdmin: isAdmin, adminLogout: adminLogout, hasAccess: hasAccess,
+    isHeritage: isHeritage, memberTier: memberTier, memberStatus: memberStatus, memberPending: memberPending,
     // async readiness hooks (used by login.html / admin.html so the sync getters
     // above reflect the resolved session before they're read):
     ready: whenReady, refresh: refreshSession,
@@ -452,10 +465,43 @@
   function renderBanner() {
     clearBanner();
     if (isAdmin()) { showAdminBanner(); return; }
+    if (isHeritage()) { showHeritageBanner(); return; }
     var vip = currentVip();
     if (vip) { showBanner(vip); return; }
     var exp = expiredVip();
     if (exp) showExpiredBanner(exp);
+  }
+  function showHeritageBanner() {
+    if (document.querySelector('.vip-banner')) return;
+    var pending = memberPending();
+    var tk = memberTier() || 'admirer';
+    var tierTxt = T('app.tier.' + tk, tk.charAt(0).toUpperCase() + tk.slice(1));
+    var stateTxt = pending
+      ? esc(T('app.member.review', 'Membership under review'))
+      : ((_profile && _profile.membership_end)
+          ? esc(T('app.member.renews', 'Member · renews')) + ' <strong>' + esc(fmtDateLoc(_profile.membership_end)) + '</strong>'
+          : esc(T('app.member.active', 'Member in good standing')));
+    var b = document.createElement('div');
+    b.className = 'vip-banner';
+    b.setAttribute('role', 'status');
+    b.innerHTML = ''
+      + '<div class="vip-banner-inner">'
+      +   '<span class="vip-dot" aria-hidden="true"></span>'
+      +   '<span class="vip-welcome">' + esc(T('app.vip.welcome', 'Welcome,')) + ' <strong>' + esc((_profile && _profile.name) || 'Member') + '</strong> <em style="font-style:normal;opacity:.7;">· ' + esc(tierTxt) + '</em></span>'
+      +   '<span class="vip-valid">' + stateTxt + '</span>'
+      +   '<span class="vip-actions">'
+      +     '<a class="vip-act" href="portal.html">' + esc(T('app.member.portal', 'Heritage portal')) + '</a>'
+      +     '<button class="vip-act ghost" data-vip-out type="button">' + esc(T('app.vip.signout', 'Sign out')) + '</button>'
+      +   '</span>'
+      + '</div>';
+    document.body.appendChild(b);
+    document.body.classList.add('has-vip');
+    revealBanner(b);
+    window.addEventListener('resize', function () { syncBannerHeight(b); }, { passive: true });
+    wireToggle(b, false, 'Heritage');
+    b.addEventListener('click', function (e) {
+      if (e.target.closest('[data-vip-out]')) { signOutVip().then(function () { location.reload(); }); }
+    });
   }
   // Re-render the banner when the visitor switches language.
   window.addEventListener('minervalang', function () {

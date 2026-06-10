@@ -165,7 +165,8 @@
         }
 
         function afterInvite() {
-          // Already signed in? Straight to the home page.
+          // Already signed in? Route by role.
+          if (V.isHeritage && V.isHeritage()) { location.href = 'portal.html'; return; }
           if (V.isAdmin() || V.currentVip()) { location.href = 'index.html'; return; }
           form.addEventListener('submit', submit);
           btn.addEventListener('click', submit);
@@ -183,7 +184,7 @@
             if (isAdm) { enter(); return; }
             // 2) VIP guest — Supabase Auth + has_access check.
             return Promise.resolve(V.authVip(email, pw)).then(function (res) {
-              if (res && res.ok) { enter(); return; }
+              if (res && res.ok) { if (res.heritage) { location.href = 'portal.html'; return; } enter(); return; }
               if (btn) btn.disabled = false;
               if (res && res.reason === 'expired') { errEl.textContent = T('app.login.errExpired', 'Your access has expired — contact access@minervaluxurymotors.com'); return; }
               if (res && res.reason === 'cancelled') { errEl.textContent = T('app.login.errCancelled', 'Your access has been withdrawn — contact access@minervaluxurymotors.com'); return; }

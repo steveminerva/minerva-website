@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heritage Portal — Minerva Luxury Motors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .pt-wrap { max-width: 760px; margin: 0 auto; padding: 6vh 0 4vh; text-align: center; }
+  .pt-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--platinum-deep); }
+  .pt-title { font-size: clamp(1.8rem,5vw,3.2rem); letter-spacing: .03em; margin: 14px 0 18px; }
+  .pt-body { font-weight: 300; color: var(--fg-dim); line-height: 1.7; max-width: 46ch; margin: 0 auto 26px; }
+  .pt-tier { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--platinum-bright); border:1px solid rgba(184,188,194,.45); padding:6px 12px; margin-bottom:18px; }
+  .pt-steps { display:flex; justify-content:center; gap:0; margin:28px auto; max-width:420px; }
+  .pt-step { flex:1; position:relative; font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); padding-top:22px; }
+  .pt-step::before { content:''; position:absolute; top:5px; left:50%; transform:translateX(-50%); width:11px; height:11px; border-radius:50%; background:#0a0b0d; border:1px solid var(--line); }
+  .pt-step.on { color:var(--fg-dim); }
+  .pt-step.on::before { background:var(--platinum-bright); border-color:var(--platinum-bright); }
+  .pt-loading { text-align:center; padding:16vh 0; color:var(--mute); font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; }
+</style>
+</head>
+<body class="inner">
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+  </header>
+  <main class="page" data-screen-label="Portal">
+    <div id="ptLoading" class="pt-loading">Loading…</div>
+    <div id="ptContent" class="pt-wrap" hidden></div>
+  </main>
+
+  <script src="assets/i18n.js"></script>
+  <script src="assets/minerva.js"></script>
+  <script>
+  /* Lean, secure Heritage portal landing. The engine (vip.js) resolves the role
+     from the signed-in Supabase session; this page only renders. Full member
+     screens (archive / vehicles / news) and the admin console arrive next. */
+  (function () {
+    function T(k, fb) { try { var v = window.MinervaI18n && window.MinervaI18n.t(k, window.MinervaI18n.lang); return v != null ? v : fb; } catch (e) { return fb; } }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function ready(fn) { if (window.MinervaVIP) { (window.MinervaVIP.ready ? window.MinervaVIP.ready(fn) : fn()); return; } var t = setInterval(function () { if (window.MinervaVIP) { clearInterval(t); ready(fn); } }, 40); }
+
+    ready(function () {
+      var V = window.MinervaVIP;
+      var loading = document.getElementById('ptLoading');
+      var content = document.getElementById('ptContent');
+      function show(html) { content.innerHTML = html; loading.hidden = true; content.hidden = false; }
+
+      // Route by role (server-resolved). Not a member -> send elsewhere.
+      if (!V.isAdmin() && !(V.isHeritage && V.isHeritage()) && !V.currentVip()) { location.replace('login.html'); return; }
+      if (V.isAdmin()) { location.replace('admin.html'); return; }            // staff -> console
+      if (!(V.isHeritage && V.isHeritage())) { location.replace('index.html'); return; } // VIP -> website
+
+      var tier = (V.memberTier && V.memberTier()) || 'admirer';
+      var tierTxt = T('app.tier.' + tier, tier.charAt(0).toUpperCase() + tier.slice(1));
+
+      if (V.memberPending && V.memberPending()) {
+        show(
+          '<p class="pt-eyebrow">' + esc(T('app.member.byInvite', 'By private invitation')) + '</p>'
+          + '<h1 class="pt-title">' + esc(T('app.member.reviewTitle', 'Your membership is under review')) + '</h1>'
+          + '<span class="pt-tier">' + esc(tierTxt) + '</span>'
+          + '<p class="pt-body">' + esc(T('app.member.reviewBody', 'Thank you. Our atelier is verifying your details. The archive, your vehicles and member news will open to you the moment your membership is confirmed by email.')) + '</p>'
+          + '<div class="pt-steps">'
+          +   '<div class="pt-step on">' + esc(T('app.member.step1', 'Received')) + '</div>'
+          +   '<div class="pt-step on">' + esc(T('app.member.step2', 'In review')) + '</div>'
+          +   '<div class="pt-step">' + esc(T('app.member.step3', 'Confirmed')) + '</div>'
+          + '</div>'
+          + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a>'
+        );
+        return;
+      }
+
+      // Active member -> portal landing (full screens arrive in the next increment).
+      show(
+        '<p class="pt-eyebrow">' + esc(T('app.member.welcomeEyebrow', 'Heritage circle')) + '</p>'
+        + '<h1 class="pt-title">' + esc(T('app.member.welcomeTitle', 'Welcome to the Heritage portal')) + '</h1>'
+        + '<span class="pt-tier">' + esc(tierTxt) + '</span>'
+        + '<p class="pt-body">' + esc(T('app.member.welcomeBody', 'Your membership is active. The archive, your vehicles and member news are being prepared and will appear here shortly.')) + '</p>'
+        + '<a class="back-link" href="index.html"><span class="arr">←</span> ' + esc(T('app.member.backHome', 'Back to home')) + '</a>'
+      );
+    });
+  })();
+  </script>
+</body>
+</html>
