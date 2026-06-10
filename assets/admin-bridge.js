@@ -207,15 +207,100 @@
     }
     function passwordValid(pw) { return passwordChecks(pw).every(function (c) { return c.ok; }); }
 
-    /* ----- not-yet-wired sections: safe empty stubs (never throw) ----- */
-    function getMembersCount() { return null; }   // -> "Coming soon" tile
-    function vehicleCount() { return null; }       // -> "Coming soon" tile
-    function getVehicles() { return []; }
+    /* ==================================================================
+       VEHICLES (Phase 2) — registered vehicles, models, certificates.
+       Synchronous cache over Supabase tables (vehicles / vehicle_models /
+       certificates), same pattern as the user store. Reads & writes use
+       the _sb client, which carries the signed-in admin's JWT, so RLS
+       (admins only) applies. admin-app.js reads via getVehicles()/
+       getModels()/getCoa() synchronously and adds rows via addVehicle()/
+       addModel()/addCoa() (Promises).
+       ================================================================== */
+    var _vehicles = [], _models = [], _coa = [];
+
+    // DB column  ->  SPA record-field maps (SPA keys match VEH_FIELDS).
+    function mapVehicleRow(r) {
+      return { id: r.id, vin: r.vin || '', firstReg: r.first_reg || '', model: r.model || '',
+               modelDate: r.model_date || '', owner: r.owner || '', email: r.email || '' };
+    }
+    function mapModelRow(r) {
+      return { id: r.id, name: r.name || '', line: r.line || '', launch: r.launch || '',
+               power: r.power || '', units: (r.units != null ? r.units : ''), status: r.status || '' };
+    }
+    function mapCoaRow(r) {
+      return { id: r.id, ref: r.ref || '', vin: r.vin || '', model: r.model || '',
+               issued: r.issued || '', owner: r.owner || '', status: r.status || '' };
+    }
+    // blank -> null (Postgres date/int reject ''); trim text.
+    function s(v) { v = (v == null ? '' : String(v)).trim(); return v || null; }
+    function i(v) { v = (v == null ? '' : String(v)).trim(); if (!v) return null; var x = parseInt(v, 10); return isNaN(x) ? null : x; }
+
+    function refreshVehicles() {
+      if (!_sb) return Promise.resolve(_vehicles);
+      return _sb.from('vehicles').select('*').order('created_at', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _vehicles = res.data.map(mapVehicleRow); repaint(); } return _vehicles; })
+        .catch(function () { return _vehicles; });
+    }
+    function refreshModels() {
+      if (!_sb) return Promise.resolve(_models);
+      return _sb.from('vehicle_models').select('*').order('created_at', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _models = res.data.map(mapModelRow); repaint(); } return _models; })
+        .catch(function () { return _models; });
+    }
+    function refreshCoa() {
+      if (!_sb) return Promise.resolve(_coa);
+      return _sb.from('certificates').select('*').order('created_at', { ascending: false })
+        .then(function (res) { if (res && !res.error && res.data) { _coa = res.data.map(mapCoaRow); repaint(); } return _coa; })
+        .catch(function () { return _coa; });
+    }
+
+    function getVehicles() { return _vehicles.slice(); }
+    function getModels()   { return _models.slice(); }
+    function getCoa()      { return _coa.slice(); }
+    function vehicleCount() { return _vehicles.length; }   // real count -> dashboard tile
+    // legacy whole-list setters are unused now (create goes through add*); keep as no-ops.
     function setVehicles() {}
-    function getModels() { return []; }
     function setModels() {}
-    function getCoa() { return []; }
     function setCoa() {}
+
+    function addVehicle(rec) {
+      rec = rec || {};
+      if (!_sb) return Promise.reject(new Error('store-unavailable'));
+      return _sb.from('vehicles').insert({
+        vin: s(rec.vin), first_reg: s(rec.firstReg), model: s(rec.model),
+        model_date: s(rec.modelDate), owner: s(rec.owner), email: s(rec.email)
+      }).then(function (res) {
+        if (res && res.error) throw new Error(res.error.message || 'Could not save vehicle.');
+        return refreshVehicles();
+      });
+    }
+    function addModel(rec) {
+      rec = rec || {};
+      if (!_sb) return Promise.reject(new Error('store-unavailable'));
+      return _sb.from('vehicle_models').insert({
+        name: s(rec.name), line: s(rec.line), launch: s(rec.launch),
+        power: s(rec.power), units: i(rec.units), status: s(rec.status)
+      }).then(function (res) {
+        if (res && res.error) throw new Error(res.error.message || 'Could not save model.');
+        return refreshModels();
+      });
+    }
+    function addCoa(rec) {
+      rec = rec || {};
+      if (!_sb) return Promise.reject(new Error('store-unavailable'));
+      return _sb.from('certificates').insert({
+        ref: s(rec.ref), vin: s(rec.vin), model: s(rec.model),
+        issued: s(rec.issued), owner: s(rec.owner), status: s(rec.status)
+      }).then(function (res) {
+        if (res && res.error) throw new Error(res.error.message || 'Could not save certificate.');
+        return refreshCoa();
+      });
+    }
+
+    refreshVehicles(); refreshModels(); refreshCoa();   // initial loads
+
+    /* ----- still-not-wired sections (Phase 3/4): safe stubs (never throw) ----- */
+    function getMembersCount() { return null; }   // -> "Coming soon" tile (Phase 3)
     function getCounters() { return {}; }
     function setCounter() {}
     function auditEvents() { return []; }
@@ -231,9 +316,9 @@
       passwordValid: passwordValid,
       getMembersCount: getMembersCount,
       vehicleCount: vehicleCount,
-      getVehicles: getVehicles, setVehicles: setVehicles,
-      getModels: getModels, setModels: setModels,
-      getCoa: getCoa, setCoa: setCoa,
+      getVehicles: getVehicles, setVehicles: setVehicles, addVehicle: addVehicle,
+      getModels: getModels, setModels: setModels, addModel: addModel,
+      getCoa: getCoa, setCoa: setCoa, addCoa: addCoa,
       getCounters: getCounters, setCounter: setCounter,
       auditEvents: auditEvents,
       logActivity: logActivity,

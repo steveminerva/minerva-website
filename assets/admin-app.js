@@ -729,8 +729,6 @@
       + '</form>';
   }
   function renderVehicles() {
-    return renderComingSoon('Vehicles', 'The vehicle register, models catalogue and certificates of authenticity will appear here once the vehicle backend is connected.');
-    /* Phase 2: original implementation below (currently unreachable). */
     topBar.hidden = false;
     var q = vehQuery.trim().toLowerCase();
     function match(obj) { return !q || Object.keys(obj).some(function (k) { return String(obj[k] || '').toLowerCase().indexOf(q) >= 0; }); }
@@ -803,10 +801,15 @@
       fields.forEach(function (f) { var el = document.getElementById('vf_' + f[0]); rec[f[0]] = el ? el.value.trim() : ''; });
       var firstKey = fields[0][0];
       if (!rec[firstKey]) { err.textContent = fields[0][1] + ' is required'; return; }
-      if (vehTab === 'register') { var v = V.getVehicles(); v.unshift(rec); V.setVehicles(v); V.logActivity && V.logActivity('vehicle-created'); }
-      else if (vehTab === 'models') { var m = V.getModels(); m.unshift(rec); V.setModels(m); V.logActivity && V.logActivity('model-created'); }
-      else { var c = V.getCoa(); c.unshift(rec); V.setCoa(c); V.logActivity && V.logActivity('coa-created'); }
-      vehAdding = false; vehPage = 1; renderVehicles();
+      var saveBtn = document.getElementById('vfSave');
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+      var add = (vehTab === 'register') ? V.addVehicle(rec) : (vehTab === 'models') ? V.addModel(rec) : V.addCoa(rec);
+      Promise.resolve(add).then(function () {
+        vehAdding = false; vehPage = 1; renderVehicles();
+      }).catch(function (e) {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save record'; }
+        err.textContent = (e && e.message) ? e.message : 'Could not save. Please try again.';
+      });
     });
 
     [].forEach.call(root.querySelectorAll('[data-vtab]'), function (b) {
