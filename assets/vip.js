@@ -348,7 +348,7 @@
      (UI below is UNCHANGED from the prototype.)
      ============================================================ */
   var file = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
-  var SKIP = (file === 'admin.html' || file === 'login.html');
+  var SKIP = (file === 'admin.html' || file === 'login.html' || file === 'portal.html');
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m]; }); }
 
