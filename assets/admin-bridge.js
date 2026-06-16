@@ -489,11 +489,49 @@
     // Super-admin: change an existing user's account type (VIP / Admin / Heritage).
     bridgeStore.setUserRole = function (id, role, tier) { return callFn('admin-set-role', { userId: id, role: role, tier: tier || null }, true).then(function (r) { refreshMembers(); refreshMemberList(); return refreshUsers().then(function () { return refreshUser(id); }).then(function () { return r; }); }); };
 
+    /* ==================================================================
+       PHASE C — admin-console domain stores (Supabase-backed getX/setX).
+       getX() returns the synchronous cache; setX(arr) reconciles the table
+       to match arr (upsert by uuid id, insert new, delete removed), then
+       refreshes the cache. Mirrors the vehicles/news pattern.
+       ================================================================== */
+    function isUuid(v){ return typeof v==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v); }
+    var NIL_UUID='00000000-0000-0000-0000-000000000000';
+    function syncTable(table, arr, mapToDb, refresh){
+      if(!_db) return Promise.resolve();
+      arr = arr || [];
+      var keep = arr.filter(function(x){ return isUuid(x && x.id); }).map(function(x){ return x.id; });
+      var del = keep.length ? _db.from(table).delete().not('id','in','('+keep.join(',')+')')
+                            : _db.from(table).delete().neq('id', NIL_UUID);
+      return del.then(function(){
+        var ops = arr.map(function(item){
+          var row = mapToDb(item) || {};
+          if(isUuid(item.id)){ row.id = item.id; return _db.from(table).upsert(row); }
+          return _db.from(table).insert(row);
+        });
+        return Promise.all(ops);
+      }).then(function(){ return refresh(); }).catch(function(){ return refresh(); });
+    }
+
+    // ---- User groups ----
+    var _groups = [];
+    function mapGroupRow(r){ return { id:r.id, name:r.name, desc:r.descr, members:r.members||[], created:r.created }; }
+    function refreshGroups(){
+      if(!_db) return Promise.resolve(_groups);
+      return _db.from('groups').select('*').order('created',{ascending:false})
+        .then(function(res){ if(res && !res.error && res.data){ _groups=res.data.map(mapGroupRow); repaint(); } return _groups; })
+        .catch(function(){ return _groups; });
+    }
+    function getGroups(){ return _groups.slice(); }
+    function setGroups(arr){ return syncTable('groups', arr, function(g){
+      return { name:g.name, descr:(g.desc!=null?g.desc:(g.descr!=null?g.descr:null)), members:g.members||[] };
+    }, refreshGroups); }
+
     // Wait for the shared session to be recovered before the first read, so the very
     // first query is authenticated (avoids a transient anonymous read returning nothing).
     if (_db) {
       _db.auth.getSession()
-        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); })
+        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); refreshGroups(); })
         .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
     } else {
       refreshVehicles(); refreshModels(); refreshCoa();
@@ -522,6 +560,7 @@
       heritageMembers: heritageMembers, askConcierge: askConcierge,
       getArchives: getArchives, setArchives: setArchives,
       getNews: getNews, setNews: setNews,
+      getGroups: getGroups, setGroups: setGroups,
       getCounters: getCounters, setCounter: setCounter,
       auditEvents: auditEvents,
       logActivity: logActivity,
