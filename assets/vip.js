@@ -734,7 +734,7 @@
     var key = null;
     if (file === 'aegis.html') key = 'aegis';
     else if (file === 'sovereign.html') key = 'sovereign';
-    else if (file === 'about.html') key = 'team';
+    else if (file === 'about.html') key = 'about';
     if (!key) return;
     var container = document.querySelector('[data-protected="' + key + '"]');
     if (!container) return;
