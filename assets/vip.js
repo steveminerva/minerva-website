@@ -356,6 +356,8 @@
     if (document.getElementById('vip-style')) return;
     var css = ''
       + 'html.vip-denied-full body[data-vip-restrict="full"] main{display:none!important;}'
+      + 'html:not(.vip-cleared) [data-vip-only]{display:none!important;}'
+      + 'html.vip-cleared [data-public-only]{display:none!important;}'
       + 'html.vip-denied-team .team-grid,html.vip-denied-team [data-i18n="about.teamHead"]{display:none!important;}'
       /* persistent welcome banner */
       + 'body.has-vip{padding-top:calc(var(--cookie-h,0px) + var(--vip-h,0px));}'
@@ -688,7 +690,7 @@
   function gateMenu() {
     var main = document.querySelector('.menu-main');
     if (!main) return;
-    ['aegis.html', 'sovereign.html'].forEach(function (href) {
+    ['about.html', 'aegis.html', 'sovereign.html'].forEach(function (href) {
       var a = main.querySelector('a[href="' + href + '"]');
       if (a && a.parentNode) a.parentNode.removeChild(a);
     });
@@ -771,6 +773,11 @@
 
       var access = hasAccess();
       renderBanner();
+      // Chrome gating: VIP-only surfaces (About/Aegis/Sovereign menu items,
+      // hero VIP line, full footer) are shown only to VIP or staff; public
+      // AND Heritage members get the public chrome.
+      if (isAdmin() || currentVip()) document.documentElement.classList.add('vip-cleared');
+      else gateMenu();
 
       if (access) {
         // Authed with access: pull the private content into the page shell.

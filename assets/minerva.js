@@ -43,6 +43,20 @@
     var f = document.createElement('footer');
     f.className = 'site-foot';
     f.innerHTML = ''
+      // PUBLIC footer — logged-out visitors & Heritage members
+      + '<div class="foot-public" data-public-only>'
+      +   '<div class="foot-cols">'
+      +     '<div class="foot-col">'
+      +       '<a class="foot-link" href="history.html" data-i18n="foot.history">History</a>'
+      +       '<a class="foot-link" href="archives.html">Minerva Motors Heritage</a></div>'
+      +   '</div>'
+      +   '<div class="foot-base">'
+      +     '<span class="f-mark">MINERVA</span>'
+      +     '<span>\u00A9 2026 Minerva Motors Heritage vzw \u00B7 BE0783.597.177</span>'
+      +   '</div>'
+      + '</div>'
+      // VIP / staff footer — full
+      + '<div class="foot-vip" data-vip-only>'
       + '<div class="foot-cols">'
       +   '<div class="foot-col"><p class="foot-h" data-i18n="foot.social">Social</p>'
       +     '<a class="foot-link" href="#">Instagram</a>'
@@ -68,6 +82,7 @@
       +     '<a href="terms.html" data-i18n="foot.terms">General Terms &amp; Conditions</a>'
       +   '</nav>'
       +   '<span>\u00A9 2026 Minerva Holding B.V. \u2014 a <a class="foot-vbv" href="https://www.vanbeirsventures.com" target="_blank" rel="noopener">Van Beirs Ventures</a> company</span>'
+      + '</div>'
       + '</div>';
     var anchor = document.getElementById('tweaksRoot');
     if (anchor) { document.body.insertBefore(f, anchor); } else { document.body.appendChild(f); }
