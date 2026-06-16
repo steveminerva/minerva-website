@@ -3,11 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dispatches from Minerva Luxury Motors — the relaunch of a sovereign Belgian marque.">
+  <link rel="canonical" href="https://www.minervaluxurymotors.com/news.html">
+  <meta name="robots" content="index,follow">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="shortcut icon" href="assets/favicon-32.png">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Minerva Luxury Motors">
+  <meta property="og:url" content="https://www.minervaluxurymotors.com/news.html">
+  <meta property="og:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
 <title>News — Minerva Luxury Motors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .news-feed { display: flex; flex-direction: column; gap: 0; margin-top: clamp(28px, 5vh, 56px); border-top: 1px solid var(--line-warm, #D9CFBC); }
+  .news-art { display: grid; grid-template-columns: 160px 1fr; gap: clamp(16px, 4vw, 48px); padding: clamp(22px, 3.4vh, 34px) 0; border-bottom: 1px solid var(--line-warm, #D9CFBC); }
+  .news-art .na-date { font-family: var(--mono, monospace); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-deep, #8A6A38); padding-top: 6px; }
+  .news-art .na-title { font-family: var(--font-display, Georgia, serif); font-size: clamp(1.4rem, 2.4vw, 2rem); line-height: 1.12; color: var(--ink, #1b1b1b); margin: 0 0 10px; font-weight: 500; }
+  .news-art .na-body { font-weight: 300; line-height: 1.65; color: var(--ink-soft, #4a4a4a); max-width: 60ch; text-wrap: pretty; }
+  @media (max-width: 640px) { .news-art { grid-template-columns: 1fr; gap: 6px; } }
+</style>
 </head>
 <body class="inner">
 
@@ -24,9 +50,10 @@
       <div class="menu-main">
         <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
         <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
-        <a class="menu-item" href="aegis.html"><span class="mi-idx">03</span>Aegis</a>
-        <a class="menu-item" href="sovereign.html"><span class="mi-idx">04</span>Sovereign</a>
-        <a class="menu-item" href="news.html"><span class="mi-idx">05</span>News</a>
+        <a class="menu-item" href="archives.html"><span class="mi-idx">03</span>Heritage</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">04</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">05</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">06</span>News</a>
       </div>
       <div class="menu-foot">
         <div class="menu-foot-left">
@@ -58,12 +85,46 @@
     <p class="page-eyebrow" data-i18n="news.eyebrow">News</p>
     <h1 class="page-title" data-i18n="news.title">NEWS</h1>
     <p class="page-body" data-i18n="news.body">The latest from Minerva — announcements, milestones and press. The newsroom opens with our next announcement.</p>
-    <p class="page-tag" data-i18n="news.tag">Newsroom — coming soon</p>
+    <div class="news-feed" id="newsFeed" hidden></div>
+    <p class="page-tag" id="newsEmpty" data-i18n="news.tag">Newsroom — coming soon</p>
   </main>
 
   <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
 
+  <script src="assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/i18n.js"></script>
   <script src="assets/minerva.js"></script>
+  <script>
+    // Public newsroom: render only Published items tagged for the public website
+    // (webPublic === true). Falls back to the “coming soon” line when empty.
+    (function () {
+      function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+      function fmt(d){ try { return new Date(d).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); } catch(e){ return d || ''; } }
+      function render(items){
+        var feed = document.getElementById('newsFeed'), empty = document.getElementById('newsEmpty'), body = document.querySelector('.news-page .page-body');
+        var pub = (items || []).filter(function(n){ return n && n.status === 'Published' && n.webPublic === true; })
+          .sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+        if (!pub.length) { return; }
+        feed.innerHTML = pub.map(function(n){
+          return '<article class="news-art"><div class="na-date">' + esc(fmt(n.date)) + '</div>'
+            + '<div class="na-main"><h2 class="na-title">' + esc(n.title) + '</h2>'
+            + (n.body ? '<p class="na-body">' + esc(n.body) + '</p>' : '') + '</div></article>';
+        }).join('');
+        feed.hidden = false;
+        if (empty) empty.hidden = true;
+        if (body) body.hidden = true;
+      }
+      function attempt(tries){
+        var V = window.MinervaVIP;
+        if (V && typeof V.getNews === 'function') {
+          try { var r = V.getNews(); if (r && typeof r.then === 'function') { r.then(render); } else { render(r); } } catch(e){}
+          return;
+        }
+        if (tries > 0) setTimeout(function(){ attempt(tries - 1); }, 120);
+      }
+      attempt(40);
+    })();
+  </script>
 </body>
 </html>
