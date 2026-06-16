@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Apply for Heritage membership of Minerva Luxury Motors.">
+  <link rel="canonical" href="https://www.minervaluxurymotors.com/register.html">
+  <meta name="robots" content="noindex,follow">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="shortcut icon" href="assets/favicon-32.png">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Minerva Luxury Motors">
+  <meta property="og:url" content="https://www.minervaluxurymotors.com/register.html">
+  <meta property="og:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
+<title>Heritage Membership — Minerva Luxury Motors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .login-error { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--minerva-red-bright); text-align: center; min-height: 14px; margin-top: 2px; }
+  .login-ok { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--platinum-bright); text-align: center; min-height: 14px; margin-top: 2px; }
+  .login-card .ff { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+  .login-card .ff > label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--platinum-deep); }
+  .login-card .ff-input { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: #0a0b0d; padding: 0 15px; transition: border-color 0.3s var(--ease), background 0.3s var(--ease); }
+  .login-card .ff-input:focus-within { border-color: var(--platinum-deep); background: #0d0e11; }
+  .login-card .ff-input input { flex: 1; background: transparent; border: 0; outline: none; color: var(--fg); font-family: var(--sans); font-size: 15px; letter-spacing: 0.01em; padding: 15px 0; }
+  .login-card .ff-input input::placeholder { color: var(--mute); }
+  .ff-eye { background: none; border: 0; cursor: pointer; color: var(--mute); display: flex; padding: 4px; transition: color 0.3s var(--ease); }
+  .ff-eye:hover { color: var(--platinum-bright); }
+  .ff-eye svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+
+  #registerCard { width: min(94vw, 460px); }
+  .reg-seg { display: flex; gap: 0; border: 1px solid var(--line); }
+  .reg-seg button { flex: 1; background: transparent; border: 0; border-right: 1px solid var(--line); cursor: pointer; padding: 12px 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); transition: background .25s, color .25s; }
+  .reg-seg button:last-child { border-right: 0; }
+  .reg-seg button.on { background: var(--fg); color: #000; }
+  .reg-hint { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--mute); margin-top: 6px; line-height: 1.5; }
+  .reg-tier { font-weight: 300; font-size: 0.95rem; color: var(--fg-dim); margin: 4px 0 2px; }
+  .reg-tier b { color: var(--platinum-bright); font-weight: 500; }
+  .reg-ok { text-align: center; padding: 10px 0; }
+  .reg-ok .ro-h { font-size: clamp(1.3rem,3vw,1.9rem); letter-spacing: .03em; margin-bottom: 12px; }
+  .reg-ok .ro-b { font-weight: 300; color: var(--fg-dim); line-height: 1.65; max-width: 40ch; margin: 0 auto 18px; text-wrap: pretty; }
+  .reg-back { display: block; text-align: center; margin-top: 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute); background: none; border: 0; cursor: pointer; width: 100%; text-decoration: none; transition: color 0.3s var(--ease); }
+  .reg-back:hover { color: var(--platinum-bright); }
+</style>
+</head>
+<body class="inner">
+
+  <header class="top">
+    <a class="brand-mini" href="index.html">MINERVA</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <nav class="menu-overlay" id="menu" aria-hidden="true" aria-label="Main menu">
+    <div class="menu-ghost" aria-hidden="true">MINERVA</div>
+    <div class="menu-inner">
+      <div class="menu-main">
+        <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
+        <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
+        <a class="menu-item" href="archives.html"><span class="mi-idx">03</span>Heritage</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">04</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">05</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">06</span>News</a>
+      </div>
+      <div class="menu-foot">
+        <div class="menu-foot-left">
+          <a class="menu-login" href="login.html">Login</a>
+          <form class="subscribe" id="subscribeForm" autocomplete="off">
+            <label class="subscribe-lbl" for="subEmail">Subscribe for the announcement</label>
+            <div class="subscribe-row">
+              <input id="subEmail" type="email" placeholder="Email address" required>
+              <button type="submit" aria-label="Subscribe">Subscribe</button>
+            </div>
+            <p class="subscribe-done" id="subscribeDone" hidden>Thank you — you're on the list.</p>
+          </form>
+        </div>
+        <div class="menu-lang" id="langRow" role="group" aria-label="Language">
+          <button class="lang active" data-lang="en">English</button>
+          <button class="lang" data-lang="nl">Nederlands</button>
+          <button class="lang" data-lang="fr">Français</button>
+          <button class="lang" data-lang="de">Deutsch</button>
+          <button class="lang" data-lang="it">Italiano</button>
+          <button class="lang" data-lang="es">Español</button>
+          <button class="lang cjk" data-lang="zh">中文</button>
+          <button class="lang cjk" data-lang="ja">日本語</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page" data-screen-label="Membership">
+    <h1 class="page-title" style="font-size:clamp(2rem,6.5vw,4.8rem);">MEMBERSHIP</h1>
+    <form class="login-card" id="registerCard" autocomplete="off" onsubmit="return false;">
+      <div class="ff"><label for="rName">Full name</label><div class="ff-input"><input id="rName" type="text" placeholder="Your name" autocomplete="name"></div></div>
+      <div class="ff"><label for="rEmail">Email</label><div class="ff-input"><input id="rEmail" type="email" placeholder="you@example.com" autocomplete="email"></div></div>
+      <div class="ff"><label for="rPw">Choose a password</label><div class="ff-input"><input id="rPw" type="password" placeholder="At least 8 characters" autocomplete="new-password"><button class="ff-eye" type="button" id="rPwEye" aria-label="Show password"></button></div></div>
+      <div class="ff"><label>Do you own a Minerva?</label><div class="reg-seg" id="qOwn"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
+      <div class="ff"><label>An outstanding new-vehicle commission?</label><div class="reg-seg" id="qComm"><button type="button" data-v="no" class="on">No</button><button type="button" data-v="yes">Yes</button></div></div>
+      <div class="ff" id="rVinBlock" hidden><label for="rVin">Vehicle VIN</label><div class="ff-input"><input id="rVin" type="text" placeholder="The VIN of your Minerva"></div><p class="reg-hint">Minerva will verify this against the register.</p></div>
+      <p class="reg-tier" id="rTier">You will join as an <b>Admirer</b>.</p>
+      <p class="login-error" id="registerError" role="alert"></p>
+      <button class="btn" type="submit" id="registerBtn">Apply for membership</button>
+      <a class="reg-back" href="login.html" id="toLogin">← Back to sign in</a>
+    </form>
+  </main>
+
+  <div class="reg-overlay" id="applyOverlay" hidden role="dialog" aria-label="Membership application">
+    <div class="ro-stage">
+      <span class="ro-ring" aria-hidden="true"></span>
+      <img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva">
+    </div>
+    <div class="ro-msg">
+      <p class="ro-thanks" id="applyMsgH"></p>
+      <p class="ro-redirect" id="applyMsgB"></p>
+    </div>
+  </div>
+
+  <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
+
+  <script src="assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/heritage-i18n.js"></script>
+  <script src="assets/minerva.js"></script>
+  <script>
+    // Heritage membership self-registration
+    (function () {
+      function ready(fn){ if(window.MinervaVIP) return fn(); var t=setInterval(function(){ if(window.MinervaVIP){ clearInterval(t); fn(); } },40); }
+      ready(function () {
+        var V = window.MinervaVIP;
+        var card = document.getElementById('registerCard');
+        var own = 'no', comm = 'no';
+        var EYE = '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+        var EYEOFF = '<svg viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.4 4.1M6.2 6.2A17.6 17.6 0 0 0 2 12s3.6 7 10 7a10.6 10.6 0 0 0 4.3-.9"/><path d="M9.5 10.6a3 3 0 0 0 4 4"/></svg>';
+        var rEye = document.getElementById('rPwEye'); if (rEye) { rEye.innerHTML = EYE; rEye.addEventListener('click', function(){ var i=document.getElementById('rPw'); var s=i.type==='password'; i.type=s?'text':'password'; rEye.innerHTML=s?EYEOFF:EYE; }); }
+        function tier(){ return comm === 'yes' ? 'commissioner' : (own === 'yes' ? 'custodian' : 'admirer'); }
+        var TLABEL = { admirer:'Admirer', custodian:'Custodian', commissioner:'Commissioner' };
+        function curLang(){ try { return (window.MinervaI18n && window.MinervaI18n.lang) || localStorage.getItem('minerva-lang') || 'en'; } catch(e){ return 'en'; } }
+        function L(k,v){ return window.MinervaHeritageL10n ? window.MinervaHeritageL10n.t(k, curLang(), v) : k; }
+        function refresh(){
+          var t = tier();
+          document.getElementById('rVinBlock').hidden = !(own === 'yes' || comm === 'yes');
+          var art = t === 'admirer' ? L('reg.an') : L('reg.a');
+          var extra = t === 'admirer' ? L('reg.instant') : L('reg.reviewed');
+          document.getElementById('rTier').textContent = L('reg.joinAs', { art: art, tier: L('tier.' + t), extra: extra });
+        }
+        function applyRegLabels(){
+          var labels = card.querySelectorAll('.ff > label');
+          var keys = ['reg.name','reg.email','reg.password','reg.qOwn','reg.qComm','reg.vin'];
+          [].forEach.call(labels, function(lb,i){ if(keys[i]) lb.textContent = L(keys[i]); });
+          var vh = card.querySelector('#rVinBlock .reg-hint'); if (vh) vh.textContent = L('reg.vinHint');
+          [].forEach.call(card.querySelectorAll('#qOwn button, #qComm button'), function(b){ b.textContent = L(b.getAttribute('data-v')==='yes'?'reg.yes':'reg.no'); });
+          var rb = document.getElementById('registerBtn'); if (rb) rb.textContent = L('reg.submit');
+          var tlk = document.getElementById('toLogin'); if (tlk) tlk.textContent = L('reg.back');
+          refresh();
+        }
+        function seg(id, set){
+          var box = document.getElementById(id);
+          [].forEach.call(box.querySelectorAll('button'), function(b){
+            b.addEventListener('click', function(){
+              [].forEach.call(box.querySelectorAll('button'), function(x){ x.classList.remove('on'); });
+              b.classList.add('on'); set(b.getAttribute('data-v')); refresh();
+            });
+          });
+        }
+        seg('qOwn', function(v){ own = v; });
+        seg('qComm', function(v){ comm = v; });
+        applyRegLabels();
+        function go(){
+          var err = document.getElementById('registerError'); err.className='login-error'; err.textContent='';
+          var name = document.getElementById('rName').value.trim();
+          var email = document.getElementById('rEmail').value.trim();
+          var pw = document.getElementById('rPw').value;
+          var vin = document.getElementById('rVin').value.trim();
+          if (!name) { err.textContent = L('reg.errName'); return; }
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = L('reg.errEmail'); return; }
+          if (pw.length < 8) { err.textContent = L('reg.errPw'); return; }
+          var t = tier();
+          if ((own === 'yes' || comm === 'yes') && !vin) { err.textContent = L('reg.errVin'); return; }
+          var lang = curLang();
+          var CFG = window.MINERVA_SUPABASE || {};
+          if (!CFG.url || !CFG.anonKey) { err.textContent = 'Service unavailable \u2014 please try again in a moment'; return; }
+          var rb = document.getElementById('registerBtn'); rb.disabled = true; rb.textContent = '\u2026';
+          // Calls the hardened public heritage-register edge function (same flow as login.html).
+          fetch(CFG.url + '/functions/v1/heritage-register', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'apikey': CFG.anonKey, 'authorization': 'Bearer ' + CFG.anonKey },
+            body: JSON.stringify({ name: name, email: email, password: pw, ownsMinerva: own === 'yes', hasCommission: comm === 'yes', vin: vin || null, lang: lang })
+          }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
+            .then(function (res) {
+              if (!res.ok || (res.b && res.b.error)) {
+                rb.disabled = false; rb.textContent = L('reg.submit');
+                var e = res.b && res.b.error;
+                err.textContent = e === 'email-taken' ? L('reg.errExists')
+                  : e === 'vin-required' ? L('reg.errVin')
+                  : e === 'password-weak' ? L('reg.errPw')
+                  : 'We could not complete your application. Please try again.';
+                return;
+              }
+              var active = res.b && res.b.status === 'active';
+              if (active && V && V.authVip) { try { V.authVip(email, pw); } catch (e) {} }
+              var ov = document.getElementById('applyOverlay');
+              var hEl = document.getElementById('applyMsgH');
+              var bEl = document.getElementById('applyMsgB');
+              if (hEl) hEl.textContent = active ? L('reg.okTitle') : L('reg.pendTitle');
+              if (bEl) bEl.textContent = active ? L('reg.okBody') : L('reg.pendBody', { name: name.split(/\s+/)[0], tier: L('tier.' + t) });
+              ov.hidden = false;
+              requestAnimationFrame(function () { ov.classList.add('show'); });
+              setTimeout(function () {
+                var st = ov.querySelector('.ro-stage'); if (st) st.classList.add('hide');
+                var msg = ov.querySelector('.ro-msg'); if (msg) msg.classList.add('show');
+              }, 1100);
+              setTimeout(function () { location.href = 'index.html'; }, 5000);
+            }).catch(function () {
+              rb.disabled = false; rb.textContent = L('reg.submit');
+              err.textContent = 'We could not complete your application. Please try again.';
+            });
+        }
+        document.getElementById('registerBtn').addEventListener('click', go);
+        card.addEventListener('submit', go);
+      });
+    })();
+  </script>
+</body>
+</html>
