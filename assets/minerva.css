@@ -61,6 +61,25 @@ a { color: inherit; text-decoration: none; }
 
 ::selection { background: var(--platinum); color: #000; }
 
+/* ============================================================
+   Global scrollbars — theme-agnostic.
+   --platinum-deep (#8E9197) is a mid grey that stays visible on
+   both the all-black UI and the light-theme console, while never
+   clashing with either. Applies everywhere; panel-specific
+   scrollbars below remain more specific and keep their own look.
+   ============================================================ */
+* { scrollbar-width: thin; scrollbar-color: var(--platinum-deep) transparent; }
+::-webkit-scrollbar { width: 11px; height: 11px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--platinum-deep);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--platinum); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
 .mono {
   font-family: var(--mono);
   font-weight: 400;
@@ -793,6 +812,16 @@ body.home .back-link, body.teaser .back-link { display: none !important; }
 .archive-wrap .page-title {
   font-size: clamp(2rem, 6.5vw, 4.8rem);
 }
+.archive-credit {
+  margin-top: clamp(16px, 2.4vh, 24px);
+  max-width: 56ch;
+  font-weight: 300;
+  font-size: clamp(0.82rem, 1.25vw, 0.95rem);
+  line-height: 1.6;
+  color: var(--mute);
+  text-wrap: pretty;
+}
+.archive-credit strong { color: var(--platinum); font-weight: 500; }
 
 .archive-reg {
   width: min(560px, 92vw);

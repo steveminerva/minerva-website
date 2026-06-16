@@ -3,11 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minerva Motors Heritage — Minerva Luxury Motors Club</title>
+  <meta name="description" content="The Minerva Heritage archive — documents, photographs and records of a marque founded in 1897.">
+  <link rel="canonical" href="https://www.minervaluxurymotors.com/archives.html">
+  <meta name="robots" content="index,follow">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="shortcut icon" href="assets/favicon-32.png">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Minerva Luxury Motors">
+  <meta property="og:url" content="https://www.minervaluxurymotors.com/archives.html">
+  <meta property="og:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://www.minervaluxurymotors.com/assets/og-share.png">
+<title>Heritage Archive — Minerva Luxury Motors</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/minerva.css">
+<style>
+  .heritage-apply { display: block; text-align: center; margin-top: clamp(34px, 6vh, 60px); font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--platinum); text-decoration: none; transition: color 0.3s var(--ease); }
+  .heritage-apply:hover, .heritage-apply:focus-visible { color: var(--minerva-red-bright); }
+</style>
 </head>
 <body class="inner">
 
@@ -24,9 +46,10 @@
       <div class="menu-main">
         <a class="menu-item" href="about.html"><span class="mi-idx">01</span>About Us</a>
         <a class="menu-item" href="history.html"><span class="mi-idx">02</span>History</a>
-        <a class="menu-item" href="aegis.html"><span class="mi-idx">03</span>Aegis</a>
-        <a class="menu-item" href="sovereign.html"><span class="mi-idx">04</span>Sovereign</a>
-        <a class="menu-item" href="news.html"><span class="mi-idx">05</span>News</a>
+        <a class="menu-item" href="archives.html"><span class="mi-idx">03</span>Heritage</a>
+        <a class="menu-item" href="aegis.html"><span class="mi-idx">04</span>Aegis</a>
+        <a class="menu-item" href="sovereign.html"><span class="mi-idx">05</span>Sovereign</a>
+        <a class="menu-item" href="news.html"><span class="mi-idx">06</span>News</a>
       </div>
       <div class="menu-foot">
         <div class="menu-foot-left">
@@ -59,55 +82,24 @@
     <h1 class="page-title" data-i18n="arch.title">Minerva Motors Heritage</h1>
     <p class="archive-lede">The Minerva Luxury Motors Club preserves the marque's documented record — period photographs, coachbuilders' records and chassis registers — in close partnership with existing stakeholders dedicated to the conservation of the brand. We invite owners, historians and enthusiasts to take part in conserving this heritage, and to join us at our collector's events.</p>
 
+    <p class="archive-credit">The <strong>Minerva Motors Heritage vzw</strong> — the non-profit association entrusted with preserving the history of the marque — counts <strong>Jean Claes</strong> among its founding members.</p>
+
     <div class="archive-gallery" aria-label="Archive photographs">
       <span class="ag-shot"><img src="uploads/picture1.jpg" alt="Minerva motor car"></span>
       <span class="ag-shot"><img src="uploads/picture2.jpg" alt="Minerva motor car"></span>
       <span class="ag-shot"><img src="uploads/picture3.jpg" alt="Minerva motor car"></span>
       <span class="ag-shot"><img src="uploads/picture4.jpg" alt="Minerva motor car"></span>
-      <span class="ag-shot"><img src="uploads/minervabike-090318e9.jpg" alt="Minerva motorised cycle"></span>
-      <span class="ag-shot"><img src="uploads/minervabw1-001c1c1e.jpg" alt="Minerva racing car"></span>
+      <span class="ag-shot"><img src="uploads/minervabike.jpg" alt="Minerva motorised cycle"></span>
+      <span class="ag-shot"><img src="uploads/minervabw1.jpg" alt="Minerva racing car"></span>
     </div>
 
-    <form class="archive-reg" id="interestForm" autocomplete="off">
-      <p class="reg-h">Register your interest</p>
-      <div class="reg-options">
-        <label class="reg-check">
-          <input type="checkbox" name="interest" value="conservation" checked>
-          <span class="reg-box"></span>
-          <span class="reg-lbl">I would like to take part in history conservation</span>
-        </label>
-        <label class="reg-check">
-          <input type="checkbox" name="interest" value="events" checked>
-          <span class="reg-box"></span>
-          <span class="reg-lbl">Invite me to collector's events</span>
-        </label>
-      </div>
-      <div class="field">
-        <label for="regEmail">Email</label>
-        <input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email" required>
-      </div>
-      <label class="reg-consent">
-        <input type="checkbox" id="regEmailConsent" required>
-        <span>I give Minerva permission to contact me by email about the archives, history conservation and collector's events. I may withdraw my consent at any time. See our <a href="#">Privacy &amp; Cookie Policy</a>.</span>
-      </label>
-      <button class="btn" type="submit">Register interest</button>
-      <p class="reg-done" id="regDone" hidden>Thank you — your interest has been registered.</p>
-    </form>
+    <a class="heritage-apply" href="register.html">Apply for Heritage membership</a>
   </main>
-
-  <div class="reg-overlay" id="regOverlay" hidden role="dialog" aria-label="Registration confirmation">
-    <div class="ro-stage">
-      <span class="ro-ring" aria-hidden="true"></span>
-      <img class="ro-logo" src="uploads/minerva-logo-black.png" alt="Minerva">
-    </div>
-    <div class="ro-msg">
-      <p class="ro-thanks">You share our passion for the marque or hold a piece of its history, we are honoured to build its future together. <span class="ro-motto">Sapientia et Ars.</span></p>
-      <p class="ro-redirect" id="roRedirect" hidden>We will redirect you to the home page within <span id="roCount">10</span> seconds…</p>
-    </div>
-  </div>
 
   <a class="back-link" href="index.html"><span class="arr">←</span> Back to home</a>
 
+  <script src="assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/i18n.js"></script>
   <script src="assets/minerva.js"></script>
 </body>
