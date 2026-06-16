@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   var V;
-  function ready(fn) { if (window.MinervaVIP) { V = window.MinervaVIP; return fn(); } setTimeout(function () { ready(fn); }, 40); }
+  function ready(fn) { if (window.MinervaVIP) { V = window.MinervaVIP; if (V.ready) { V.ready(fn); return; } return fn(); } setTimeout(function () { ready(fn); }, 40); }
 
   var root = document.getElementById('admRoot');
   var topBar = { hidden: false };   // sidebar shell is always visible; no-op for legacy calls
