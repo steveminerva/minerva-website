@@ -5,12 +5,13 @@
 // knowledge that role is cleared for. Because higher-clearance knowledge never
 // enters the prompt, it cannot be leaked, even under a jailbreak attempt.
 //   super        -> everything
-//   admin        -> admin + public                    (NEVER super/vip/heritage member content)
-//   vip          -> vip + public                       (never admin/heritage)
-//   commissioner -> commissioner+custodian+admirer + heritage + VIP + public  (new-car owners get VIP web access)
-//   custodian    -> custodian+admirer + heritage + public
-//   admirer      -> admirer + heritage + public
+//   admin        -> admin + models + public            (NEVER super/vip/heritage member content)
+//   vip          -> vip + models + public              (never admin/heritage)
+//   commissioner -> commissioner+custodian+admirer + heritage + VIP + models + public  (new-car owners get VIP web access)
+//   custodian    -> custodian+admirer + heritage + public   (no modern models)
+//   admirer      -> admirer + heritage + public              (no modern models)
 //   anon         -> public  (the UI only shows the concierge to signed-in users)
+// 'models' = the modern confidential vehicles (Aegis, Sovereign). 'public' = history + historic vehicles.
 // Requires the project secret MISTRAL_API_KEY.
 // Deploy: supabase functions deploy concierge --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -27,16 +28,16 @@ const SUPER_EMAIL = "admin@minervaluxurymotors.com";
 
 // Which knowledge audiences may this caller see?
 function audiencesFor(profile: any, email: string): { role: string; audiences: string[] } {
-  const ALL = ["super", "admin", "vip", "heritage", "commissioner", "custodian", "admirer", "public"];
+  const ALL = ["super", "admin", "vip", "models", "heritage", "commissioner", "custodian", "admirer", "public"];
   if (!profile) return { role: "guest", audiences: ["public"] };
   const isAdmin = !!profile.is_admin;
   if (isAdmin && (email || "").toLowerCase() === SUPER_EMAIL) return { role: "super-admin", audiences: ALL };
-  if (isAdmin) return { role: "admin", audiences: ["admin", "public"] }; // features + technical + marketing + history/vehicles; NO super/vip/heritage member content
+  if (isAdmin) return { role: "admin", audiences: ["admin", "models", "public"] }; // features/technical/marketing + modern models + history/vehicles; NO super/vip/heritage member content
   // Heritage member (active)
   if (profile.tier && profile.status === "active") {
     const base = ["heritage", "public"];
-    // Commissioners order a new car -> also get VIP web access.
-    if (profile.tier === "commissioner") return { role: "commissioner", audiences: ["commissioner", "custodian", "admirer", "vip", ...base] };
+    // Commissioners order a new car -> also get VIP web access + the modern models.
+    if (profile.tier === "commissioner") return { role: "commissioner", audiences: ["commissioner", "custodian", "admirer", "vip", "models", ...base] };
     if (profile.tier === "custodian") return { role: "custodian", audiences: ["custodian", "admirer", ...base] };
     return { role: "admirer", audiences: ["admirer", ...base] };
   }
@@ -44,20 +45,20 @@ function audiencesFor(profile: any, email: string): { role: string; audiences: s
   const today = new Date().toISOString().slice(0, 10);
   const cancelled = !!profile.cancelled_at;
   const expired = !!(profile.end_date && profile.end_date < today);
-  if (!profile.tier && !cancelled && !expired) return { role: "vip", audiences: ["vip", "public"] };
+  if (!profile.tier && !cancelled && !expired) return { role: "vip", audiences: ["vip", "models", "public"] };
   return { role: "guest", audiences: ["public"] };
 }
 
 // A few contextual starter questions per role (shown as clickable chips).
 function startersFor(role: string): string[] {
   switch (role) {
-    case "super-admin": return ["Tell me about Minerva's history.", "Who are our current partners?", "How do I create an admin account?"];
-    case "admin":       return ["How do I extend a VIP's access?", "How do I publish a news post?", "Tell me about Minerva's history."];
-    case "vip":         return ["What are the Aegis Pista's specifications?", "How do I access the private website?", "Tell me about Minerva's history."];
+    case "super-admin": return ["Tell me about Minerva's history.", "Who are our current partners?", "What are the Aegis specifications?"];
+    case "admin":       return ["How do I extend a VIP's access?", "How do I publish a news post?", "What are the Aegis specifications?"];
+    case "vip":         return ["What are the Aegis Pista's specifications?", "Tell me about the Sovereign.", "Tell me about Minerva's history."];
     case "commissioner":return ["What does my Commissioner membership include?", "What are the Aegis specifications?", "Tell me about Minerva's history."];
-    case "custodian":   return ["What does my Custodian membership include?", "Which models has Minerva made?", "Tell me about Minerva's heritage."];
-    case "admirer":     return ["What does my membership include?", "Tell me about Minerva's history.", "Which models has Minerva made?"];
-    default:            return ["Tell me about Minerva's history.", "Which models has Minerva made?"];
+    case "custodian":   return ["What does my Custodian membership include?", "Which historic models has Minerva made?", "Tell me about Minerva's heritage."];
+    case "admirer":     return ["What does my membership include?", "Tell me about Minerva's history.", "Which historic models has Minerva made?"];
+    default:            return ["Tell me about Minerva's history.", "Which historic models has Minerva made?"];
   }
 }
 
