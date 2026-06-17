@@ -4,11 +4,14 @@
 // database — never trusted from the client — and the model is given ONLY the
 // knowledge that role is cleared for. Because higher-clearance knowledge never
 // enters the prompt, it cannot be leaked, even under a jailbreak attempt.
-//   super  -> everything
-//   admin  -> admin + vip + heritage(all tiers) + public   (NEVER super)
-//   vip    -> vip + public                                   (never admin/heritage)
-//   member -> their tier + heritage + public                (never admin/vip)
-//   anon   -> public
+//   super        -> everything
+//   admin        -> admin + models + public            (NEVER super/vip/heritage member content)
+//   vip          -> vip + models + public              (never admin/heritage)
+//   commissioner -> commissioner+custodian+admirer + heritage + VIP + models + public  (new-car owners get VIP web access)
+//   custodian    -> custodian+admirer + heritage + public   (no modern models)
+//   admirer      -> admirer + heritage + public              (no modern models)
+//   anon         -> public  (the UI only shows the concierge to signed-in users)
+// 'models' = the modern confidential vehicles (Aegis, Sovereign). 'public' = history + historic vehicles.
 // Requires the project secret MISTRAL_API_KEY.
 // Deploy: supabase functions deploy concierge --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -25,15 +28,16 @@ const SUPER_EMAIL = "admin@minervaluxurymotors.com";
 
 // Which knowledge audiences may this caller see?
 function audiencesFor(profile: any, email: string): { role: string; audiences: string[] } {
-  const ALL = ["super", "admin", "vip", "heritage", "commissioner", "custodian", "admirer", "public"];
+  const ALL = ["super", "admin", "vip", "models", "heritage", "commissioner", "custodian", "admirer", "public"];
   if (!profile) return { role: "guest", audiences: ["public"] };
   const isAdmin = !!profile.is_admin;
   if (isAdmin && (email || "").toLowerCase() === SUPER_EMAIL) return { role: "super-admin", audiences: ALL };
-  if (isAdmin) return { role: "admin", audiences: ["admin", "vip", "heritage", "commissioner", "custodian", "admirer", "public"] }; // NOT super
+  if (isAdmin) return { role: "admin", audiences: ["admin", "models", "public"] }; // features/technical/marketing + modern models + history/vehicles; NO super/vip/heritage member content
   // Heritage member (active)
   if (profile.tier && profile.status === "active") {
     const base = ["heritage", "public"];
-    if (profile.tier === "commissioner") return { role: "commissioner", audiences: ["commissioner", "custodian", "admirer", ...base] };
+    // Commissioners order a new car -> also get VIP web access + the modern models.
+    if (profile.tier === "commissioner") return { role: "commissioner", audiences: ["commissioner", "custodian", "admirer", "vip", "models", ...base] };
     if (profile.tier === "custodian") return { role: "custodian", audiences: ["custodian", "admirer", ...base] };
     return { role: "admirer", audiences: ["admirer", ...base] };
   }
@@ -41,16 +45,26 @@ function audiencesFor(profile: any, email: string): { role: string; audiences: s
   const today = new Date().toISOString().slice(0, 10);
   const cancelled = !!profile.cancelled_at;
   const expired = !!(profile.end_date && profile.end_date < today);
-  if (!profile.tier && !cancelled && !expired) return { role: "vip", audiences: ["vip", "public"] };
+  if (!profile.tier && !cancelled && !expired) return { role: "vip", audiences: ["vip", "models", "public"] };
   return { role: "guest", audiences: ["public"] };
+}
+
+// A few contextual starter questions per role (shown as clickable chips).
+function startersFor(role: string): string[] {
+  switch (role) {
+    case "super-admin": return ["Tell me about Minerva's history.", "Who are our current partners?", "What are the Aegis specifications?"];
+    case "admin":       return ["How do I extend a VIP's access?", "How do I publish a news post?", "What are the Aegis specifications?"];
+    case "vip":         return ["What are the Aegis Pista's specifications?", "Tell me about the Sovereign.", "Tell me about Minerva's history."];
+    case "commissioner":return ["What does my Commissioner membership include?", "What are the Aegis specifications?", "Tell me about Minerva's history."];
+    case "custodian":   return ["What does my Custodian membership include?", "Which historic models has Minerva made?", "Tell me about Minerva's heritage."];
+    case "admirer":     return ["What does my membership include?", "Tell me about Minerva's history.", "Which historic models has Minerva made?"];
+    default:            return ["Tell me about Minerva's history.", "Which historic models has Minerva made?"];
+  }
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method" }, 405);
-
-  const key = Deno.env.get("MISTRAL_API_KEY");
-  if (!key) return json({ error: "concierge-not-configured" }, 503);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -68,11 +82,15 @@ Deno.serve(async (req) => {
     }
   }
   const { role, audiences } = audiencesFor(profile, email);
+  const starters = startersFor(role);
 
-  // 2) input
+  // 2) input — an empty question is a "starters only" request (used to populate the chips).
   const body = await req.json().catch(() => ({}));
   const question = String(body.question || "").trim().slice(0, 800);
-  if (!question) return json({ error: "empty" }, 400);
+  if (!question) return json({ ok: true, role: role, starters: starters });
+
+  const key = Deno.env.get("MISTRAL_API_KEY");
+  if (!key) return json({ error: "concierge-not-configured" }, 503);
 
   // 3) retrieve ONLY the knowledge this role is cleared for
   const { data: kb } = await admin.from("concierge_kb")
@@ -107,5 +125,5 @@ Deno.serve(async (req) => {
     return json({ error: "model-unreachable" }, 502);
   }
 
-  return json({ ok: true, answer: answer, role: role });
+  return json({ ok: true, answer: answer, role: role, starters: starters });
 });
