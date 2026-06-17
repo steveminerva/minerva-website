@@ -527,11 +527,36 @@
       return { name:g.name, descr:(g.desc!=null?g.desc:(g.descr!=null?g.descr:null)), members:g.members||[] };
     }, refreshGroups); }
 
+    // ---- Generic JSONB doc-store for the admin-managed console domains ----
+    // Whole console objects are stored in a `doc` jsonb column, so getX/setX
+    // round-trip exactly. RLS (staff/super) is enforced server-side by 0010.
+    function docStore(table){
+      var cache = [];
+      function refresh(){
+        if(!_db) return Promise.resolve(cache);
+        return _db.from(table).select('id,doc')
+          .then(function(res){ if(res && !res.error && res.data){ cache = res.data.map(function(r){ return Object.assign({ id:r.id }, r.doc || {}); }); repaint(); } return cache; })
+          .catch(function(){ return cache; });
+      }
+      function get(){ return cache.slice(); }
+      function set(arr){ return syncTable(table, arr, function(item){ var d=Object.assign({}, item); delete d.id; return { doc:d }; }, refresh); }
+      return { get:get, set:set, refresh:refresh };
+    }
+    var _plans = docStore('subscription_plans');
+    var _inv   = docStore('invoices');
+    var _pay   = docStore('payments');
+    var _camp  = docStore('campaigns');
+    var _trg   = docStore('automation_triggers');
+    var _msg   = docStore('messages');
+    var _wid   = docStore('widgets');
+    var _evt   = docStore('automation_events');
+    var _nlog  = docStore('notification_logs');
+
     // Wait for the shared session to be recovered before the first read, so the very
     // first query is authenticated (avoids a transient anonymous read returning nothing).
     if (_db) {
       _db.auth.getSession()
-        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); refreshGroups(); })
+        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); refreshGroups(); _plans.refresh(); _inv.refresh(); _pay.refresh(); _camp.refresh(); _trg.refresh(); _msg.refresh(); _wid.refresh(); _evt.refresh(); _nlog.refresh(); })
         .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
     } else {
       refreshVehicles(); refreshModels(); refreshCoa();
@@ -561,6 +586,15 @@
       getArchives: getArchives, setArchives: setArchives,
       getNews: getNews, setNews: setNews,
       getGroups: getGroups, setGroups: setGroups,
+      getSubscriptions: _plans.get, setSubscriptions: _plans.set,
+      getInvoices: _inv.get, setInvoices: _inv.set,
+      getPayments: _pay.get, setPayments: _pay.set,
+      getCampaigns: _camp.get, setCampaigns: _camp.set,
+      getTriggers: _trg.get, setTriggers: _trg.set,
+      getMessages: _msg.get, setMessages: _msg.set,
+      getWidgets: _wid.get, setWidgets: _wid.set,
+      getAutomations: _evt.get, setAutomations: _evt.set,
+      getNotifLogs: _nlog.get, setNotifLogs: _nlog.set,
       getCounters: getCounters, setCounter: setCounter,
       auditEvents: auditEvents,
       logActivity: logActivity,
