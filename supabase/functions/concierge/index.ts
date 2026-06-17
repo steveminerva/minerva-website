@@ -12,6 +12,13 @@
 //   admirer      -> admirer + heritage + public              (no modern models)
 //   anon         -> public  (the UI only shows the concierge to signed-in users)
 // 'models' = the modern confidential vehicles (Aegis, Sovereign). 'public' = history + historic vehicles.
+//
+// IMPERSONATION ("view as"): a request may carry viewAsUserId. It is honoured ONLY
+// when the real JWT belongs to the super-admin, and it can only switch the answer to
+// THAT user's role — i.e. it can only NARROW what is returned (super already sees
+// everything). A non-super caller's viewAsUserId is ignored, so no escalation is
+// possible. The role is still computed server-side from the DB for the target user.
+//
 // Requires the project secret MISTRAL_API_KEY.
 // Deploy: supabase functions deploy concierge --no-verify-jwt
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -25,6 +32,7 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "content-type": "application/json" } });
 
 const SUPER_EMAIL = "admin@minervaluxurymotors.com";
+const PROFILE_COLS = "is_admin, email, tier, status, end_date, cancelled_at";
 
 // Which knowledge audiences may this caller see?
 function audiencesFor(profile: any, email: string): { role: string; audiences: string[] } {
@@ -67,37 +75,48 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const body = await req.json().catch(() => ({}));
 
-  // 1) resolve the caller's role SERVER-SIDE (jwt -> profiles). Missing/invalid -> anon.
+  // 1) resolve the REAL caller's role SERVER-SIDE (jwt -> profiles). Missing/invalid -> anon.
   const jwt = (req.headers.get("authorization") || "").replace("Bearer ", "");
-  let profile: any = null, email = "";
+  let profile: any = null, email = "", realUserId = "";
   if (jwt) {
     const { data } = await admin.auth.getUser(jwt);
     if (data?.user) {
+      realUserId = data.user.id;
       email = data.user.email || "";
-      const { data: p } = await admin.from("profiles")
-        .select("is_admin, email, tier, status, end_date, cancelled_at").eq("id", data.user.id).single();
+      const { data: p } = await admin.from("profiles").select(PROFILE_COLS).eq("id", data.user.id).single();
       profile = p || null;
       if (profile && !email) email = profile.email || "";
     }
   }
-  const { role, audiences } = audiencesFor(profile, email);
+  const realIsSuper = !!(profile && profile.is_admin && (email || "").toLowerCase() === SUPER_EMAIL);
+
+  // 2) impersonation: ONLY a verified super-admin may "view as" another user, and it
+  //    can only switch the answer to that user's (never-broader) role. Computed from DB.
+  let effProfile = profile, effEmail = email;
+  const viewAsUserId = body && body.viewAsUserId ? String(body.viewAsUserId) : "";
+  if (realIsSuper && viewAsUserId && viewAsUserId !== realUserId) {
+    const { data: vp } = await admin.from("profiles").select(PROFILE_COLS).eq("id", viewAsUserId).single();
+    if (vp) { effProfile = vp; effEmail = vp.email || ""; }
+  }
+
+  const { role, audiences } = audiencesFor(effProfile, effEmail);
   const starters = startersFor(role);
 
-  // 2) input — an empty question is a "starters only" request (used to populate the chips).
-  const body = await req.json().catch(() => ({}));
-  const question = String(body.question || "").trim().slice(0, 800);
+  // 3) input — an empty question is a "starters only" request (used to populate the chips).
+  const question = String((body && body.question) || "").trim().slice(0, 800);
   if (!question) return json({ ok: true, role: role, starters: starters });
 
   const key = Deno.env.get("MISTRAL_API_KEY");
   if (!key) return json({ error: "concierge-not-configured" }, 503);
 
-  // 3) retrieve ONLY the knowledge this role is cleared for
+  // 4) retrieve ONLY the knowledge this (effective) role is cleared for
   const { data: kb } = await admin.from("concierge_kb")
     .select("audience, topic, content").in("audience", audiences);
   const knowledge = (kb || []).map((r) => "- (" + r.audience + "/" + (r.topic || "") + ") " + r.content).join("\n");
 
-  // 4) build the scoped prompt and call Mistral
+  // 5) build the scoped prompt and call Mistral
   const system =
     "You are the Minerva Concierge, a concise and courteous assistant for the Minerva Luxury Motors platform. "
     + "You are assisting a " + role + " user. "
