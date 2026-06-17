@@ -2700,10 +2700,12 @@
     function PL(key, en) { return hv ? HT(key) : en; }
     var acct = V.account ? V.account() : null;
     var me = acct ? acct.name : '';
+    var myId = acct ? acct.id : '';
     var visible = V.getArchives().filter(function (a) {
       if (isAdminView) return true;
       if (a.visibility === 'public') return true;
-      return a.by && me && a.by === me;
+      // own private items: match on owner UUID (a.owner), not display name
+      return a.owner && myId && a.owner === myId;
     });
     if (archFilter === 'public') visible = visible.filter(function (a) { return a.visibility === 'public'; });
     else if (archFilter === 'private') visible = visible.filter(function (a) { return a.visibility === 'private'; });
@@ -2747,7 +2749,7 @@
     if (!rec) { archSel = null; location.hash = '#heritage'; render(); return; }
     var acct = V.account ? V.account() : null;
     var isAdminView = !!(V.isAdmin && V.isAdmin());
-    var owns = acct && rec.by === acct.name;
+    var owns = acct && rec.owner === acct.id;
     var canManage = isAdminView || ((V.canContribute && V.canContribute()) && owns);
     var media = rec.thumb
       ? '<div class="arch-hero" style="background-image:url(' + rec.thumb + ')"></div>'
@@ -2755,7 +2757,7 @@
     var rows = [
       ['Title', rec.title], ['Year', rec.year || '\u2014'], ['Category', rec.category || '\u2014'],
       ['Visibility', rec.visibility === 'public' ? 'Public \u2014 visible to all members' : 'Private \u2014 not shown to other members'],
-      ['Contributed by', rec.by || '\u2014'], ['File', rec.fileName || '\u2014'], ['Description', rec.desc || '\u2014']
+      ['Contributed by', (acct && rec.owner === acct.id) ? 'You' : 'Minerva Heritage'], ['File', rec.fileName || '\u2014'], ['Description', rec.desc || '\u2014']
     ].map(function (r) { return '<div class="rec-row"><span class="rec-k">' + esc(r[0]) + '</span><span class="rec-v">' + esc(String(r[1])) + '</span></div>'; }).join('');
     root.innerHTML = ''
       + '<div class="adm-wrap" data-screen-label="Archive Document">'
