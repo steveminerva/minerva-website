@@ -33,6 +33,18 @@ async function requireAdmin(admin: SupabaseClient, req: Request) {
   return user;
 }
 
+// Enforce the 3-month VIP cap server-side: a VIP's end date is at most 90 days
+// from today. A missing/empty date is forced to the cap (a VIP must have an
+// expiry); a date beyond the cap is clamped down. Dates are 'YYYY-MM-DD'.
+function capVipEnd(endDate?: string | null): string {
+  const max = new Date();
+  max.setUTCDate(max.getUTCDate() + 90);
+  const maxStr = max.toISOString().slice(0, 10);
+  if (!endDate) return maxStr;
+  const d = String(endDate).slice(0, 10);
+  return d > maxStr ? maxStr : d;
+}
+
 function genPassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   const r = crypto.getRandomValues(new Uint32Array(12));
@@ -49,6 +61,7 @@ Deno.serve(async (req) => {
   if (me instanceof Response) return me;
 
   const { name, email, endDate, lang = "en" } = await req.json();
+  const cappedEnd = capVipEnd(endDate);
   const password = genPassword();
   const { data: created, error: cErr } = await admin.auth.admin.createUser({
     email, password, email_confirm: true, user_metadata: { name },
@@ -56,11 +69,11 @@ Deno.serve(async (req) => {
   if (cErr) return json({ error: cErr.message }, 400);
   const id = created.user!.id;
 
-  await admin.from("profiles").insert({ id, name, email: email.toLowerCase(), end_date: endDate || null, lang, invite_sent_at: new Date().toISOString() });
+  await admin.from("profiles").insert({ id, name, email: email.toLowerCase(), end_date: cappedEnd, lang, invite_sent_at: new Date().toISOString() });
   await admin.from("vip_events").insert([{ user_id: id, type: "created" }, { user_id: id, type: "invited" }]);
 
   // Send the invitation email in the BACKGROUND, then return immediately.
-  const mail = sendInvite({ name, email, password, endDate, lang })
+  const mail = sendInvite({ name, email, password, endDate: cappedEnd, lang })
     .catch((e) => console.error("sendInvite failed:", e));
   try { (globalThis as any).EdgeRuntime?.waitUntil(mail); } catch (_) { /* no-op */ }
 
