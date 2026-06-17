@@ -27,6 +27,16 @@ async function requireAdmin(admin: SupabaseClient, req: Request) {
   return user;
 }
 
+// Enforce the 3-month VIP cap server-side: a provided end date is clamped to at
+// most 90 days from today. Clearing the date (null) is left to the admin.
+function capVipEnd(endDate: string): string {
+  const max = new Date();
+  max.setUTCDate(max.getUTCDate() + 90);
+  const maxStr = max.toISOString().slice(0, 10);
+  const d = String(endDate).slice(0, 10);
+  return d > maxStr ? maxStr : d;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const admin = adminClient();
@@ -36,8 +46,9 @@ Deno.serve(async (req) => {
   const { id, endDate } = await req.json();
   if (!id) return json({ error: "missing id" }, 400);
 
+  const cappedEnd = endDate ? capVipEnd(endDate) : null;
   const { error } = await admin
-    .from("profiles").update({ end_date: endDate || null, cancelled_at: null }).eq("id", id);
+    .from("profiles").update({ end_date: cappedEnd, cancelled_at: null }).eq("id", id);
   if (error) return json({ error: error.message }, 400);
 
   await admin.from("vip_events").insert({ user_id: id, type: "extension" });
