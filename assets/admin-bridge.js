@@ -413,6 +413,7 @@
     function mapArchiveRow(a) {
       return { id: a.id, title: a.title || '', year: (a.year != null ? a.year : ''), category: a.category || '',
                visibility: a.visibility || 'private', desc: a.description || '', fileName: a.file_name || '',
+               filePath: a.file_path || '',
                thumb: a.thumb || '', by: a.owner || '', ts: a.created_at ? Date.parse(a.created_at) : 0, owner: a.owner || null };
     }
     function refreshArchives() {
@@ -438,12 +439,33 @@
             owner: (_profile && _profile.id) || null, title: a.title || null,
             year: (a.year ? parseInt(a.year, 10) : null), category: a.category || null,
             visibility: a.visibility || 'private', description: a.desc || a.description || null,
-            file_name: a.fileName || null, thumb: a.thumb || null
+            file_name: a.fileName || null, file_path: a.filePath || null, thumb: a.thumb || null
           }));
         }
       });
       _archives.forEach(function (a) { if (a.id && !seen[a.id]) ops.push(_db.from('archives').delete().eq('id', a.id)); });
       Promise.all(ops).then(function () { refreshArchives(); }).catch(function () { refreshArchives(); });
+    }
+
+    // Upload an archive file to the private 'archives' bucket, under the caller's
+    // own uid folder (matches the bucket RLS), returning the storage path to
+    // persist on the row. Members upload their own; admins curate shared items.
+    function uploadArchiveFile(file) {
+      if (!_db || !file) return Promise.reject(new Error('no-file'));
+      return _db.auth.getSession().then(function (r) {
+        var uid = (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
+        if (!uid) throw new Error('no-session');
+        var safe = String(file.name || 'file').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
+        var path = uid + '/' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + '-' + safe;
+        return _db.storage.from('archives').upload(path, file, { upsert: false, contentType: file.type || undefined })
+          .then(function (res) { if (res && res.error) throw new Error(res.error.message || 'upload failed'); return path; });
+      });
+    }
+    // Resolve a short-lived signed download URL via the access-checked edge fn
+    // (PUBLIC -> any member; PRIVATE -> owner/admin). Bucket stays private.
+    function archiveFileUrl(id) {
+      if (!id) return Promise.resolve('');
+      return callFn('archive-file', { id: id }, true).then(function (r) { return (r && r.url) || ''; });
     }
 
     /* ----- NEWS (admin-authored; members read published rows for their tier) ----- */
@@ -614,6 +636,7 @@
       isHeritage: isHeritage, memberTier: memberTier, memberPending: memberPending,
       heritageMembers: heritageMembers, askConcierge: askConcierge,
       getArchives: getArchives, setArchives: setArchives,
+      uploadArchiveFile: uploadArchiveFile, archiveFileUrl: archiveFileUrl,
       getNews: getNews, setNews: setNews,
       getGroups: getGroups, setGroups: setGroups,
       getSubscriptions: _plans.get, setSubscriptions: _plans.set,

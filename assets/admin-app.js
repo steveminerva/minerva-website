@@ -2626,7 +2626,7 @@
       var f = fileEl.files && fileEl.files[0];
       archPending = null; preview.innerHTML = '';
       if (!f) return;
-      archPending = { fileName: f.name, thumb: null };
+      archPending = { fileName: f.name, thumb: null, file: f };
       if (/^image\//.test(f.type)) {
         var rd = new FileReader();
         rd.onload = function (ev) {
@@ -2648,24 +2648,42 @@
     document.getElementById('af_cancel').addEventListener('click', function () { archAdding = false; archPending = null; renderArchives(); });
     document.getElementById('af_save').addEventListener('click', function () {
       var err = document.getElementById('af_err');
+      var saveBtn = document.getElementById('af_save');
       var title = document.getElementById('af_title').value.trim();
       if (!title) { err.textContent = 'Enter a title'; return; }
       var acct = V.account ? V.account() : null;
+      // No client id: the bridge inserts rows that arrive without an id, then
+      // re-reads the persisted row (with its real uuid) from Supabase.
       var rec = {
-        id: 'arc_' + Date.now().toString(36),
         title: title,
         year: parseInt(document.getElementById('af_year').value, 10) || '',
         category: document.getElementById('af_cat').value,
         visibility: vis,
         desc: document.getElementById('af_desc').value.trim(),
         fileName: archPending ? archPending.fileName : '',
+        filePath: '',
         thumb: archPending ? archPending.thumb : null,
         by: acct ? acct.name : 'Member',
         ts: Date.now()
       };
-      var list = V.getArchives(); list.unshift(rec); V.setArchives(list);
-      if (V.logActivity) V.logActivity('archive-created', title);
-      archAdding = false; archPending = null; renderArchives();
+      function commit() {
+        var list = V.getArchives(); list.unshift(rec); V.setArchives(list);
+        if (V.logActivity) V.logActivity('archive-created', title);
+        archAdding = false; archPending = null; renderArchives();
+      }
+      var fileObj = archPending && archPending.file;
+      if (fileObj && V.uploadArchiveFile) {
+        err.textContent = '';
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Uploading…'; }
+        V.uploadArchiveFile(fileObj)
+          .then(function (path) { rec.filePath = path || ''; commit(); })
+          .catch(function (e) {
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add to archive'; }
+            err.textContent = 'File upload failed: ' + ((e && e.message) || 'error');
+          });
+      } else {
+        commit();
+      }
     });
   }
   function renderArchives() {
@@ -2743,13 +2761,24 @@
       + '<div class="adm-wrap" data-screen-label="Archive Document">'
       +   '<p class="adm-crumb"><a class="cr-root" href="#heritage">Heritage</a><span class="cr-sep">\u203a</span><span class="cr-here">' + esc(rec.title) + '</span></p>'
       +   '<div class="adm-listhead" style="margin-top:clamp(20px,3vh,30px);"><p class="adm-section-h" style="margin:0;">Archive document</p>'
+      +     '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+      +     (rec.filePath ? '<button class="btn-new" id="archDl" type="button">Download file</button>' : '')
       +     (canManage ? '<button class="btn-new" id="archVis" type="button">Make ' + (rec.visibility === 'public' ? 'private' : 'public') + '</button>' : '')
+      +     '</div>'
       +   '</div>'
       +   media
       +   '<div class="rec-card">' + rows + '</div>'
       +   (canManage ? ('<p class="adm-section-h">Remove document</p><p class="field-hint" style="margin:-6px 0 12px;">Permanently removes this document from the archive.</p><div class="adm-extend"><button class="btn-cancel" id="archDel" type="button">Delete document</button></div>') : '')
       + '</div>';
     bindBack('#heritage');
+    var dl = document.getElementById('archDl');
+    if (dl) dl.addEventListener('click', function () {
+      var orig = dl.textContent; dl.disabled = true; dl.textContent = 'Preparing…';
+      Promise.resolve(V.archiveFileUrl ? V.archiveFileUrl(rec.id) : '').then(function (url) {
+        dl.disabled = false; dl.textContent = orig;
+        if (url) window.open(url, '_blank', 'noopener'); else alert('File unavailable.');
+      }).catch(function () { dl.disabled = false; dl.textContent = orig; alert('File unavailable.'); });
+    });
     var vb = document.getElementById('archVis');
     if (vb) vb.addEventListener('click', function () {
       V.setArchives(V.getArchives().map(function (a) { if (a.id === rec.id) a.visibility = (a.visibility === 'public' ? 'private' : 'public'); return a; }));
