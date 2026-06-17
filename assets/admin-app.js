@@ -2211,6 +2211,22 @@
     aiState.messages.push({ role: 'user', content: text });
     aiState.busy = true;
     aiRenderThread();
+    // Live concierge: role-gated Mistral via the bridge (V.askConcierge -> concierge edge fn).
+    // The function resolves the caller's role server-side and only feeds it the
+    // knowledge that role is cleared for, so we send just the latest question.
+    if (V && typeof V.askConcierge === 'function') {
+      V.askConcierge(text).then(function (ans) {
+        aiState.busy = false;
+        aiState.messages.push({ role: 'assistant', content: (ans || '').trim() || 'I beg your pardon \u2014 I was unable to compose a reply. Kindly try again.' });
+        aiRenderThread();
+      }).catch(function () {
+        aiState.busy = false;
+        aiState.messages.push({ role: 'assistant', content: 'I beg your pardon \u2014 the assistant is momentarily unavailable. Kindly try again shortly.' });
+        aiRenderThread();
+      });
+      return;
+    }
+    // Fallback: the design prototype's built-in model (not present in production).
     var canAI = window.claude && typeof window.claude.complete === 'function';
     if (!canAI) {
       aiState.busy = false;
