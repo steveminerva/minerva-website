@@ -556,17 +556,47 @@
     // first query is authenticated (avoids a transient anonymous read returning nothing).
     if (_db) {
       _db.auth.getSession()
-        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); refreshGroups(); _plans.refresh(); _inv.refresh(); _pay.refresh(); _camp.refresh(); _trg.refresh(); _msg.refresh(); _wid.refresh(); _evt.refresh(); _nlog.refresh(); })
+        .then(function () { refreshProfile(); refreshVehicles(); refreshModels(); refreshCoa(); refreshArchives(); refreshNews(); refreshMembers(); refreshMemberList(); refreshGroups(); _plans.refresh(); _inv.refresh(); _pay.refresh(); _camp.refresh(); _trg.refresh(); _msg.refresh(); _wid.refresh(); _evt.refresh(); _nlog.refresh(); refreshCounters(); refreshAudit(); })
         .catch(function () { refreshVehicles(); refreshModels(); refreshCoa(); });
     } else {
       refreshVehicles(); refreshModels(); refreshCoa();
     }
 
-    /* ----- still-not-wired sections (Phase 4): safe stubs (never throw) ----- */
-    function getCounters() { return {}; }
-    function setCounter() {}
-    function auditEvents() { return []; }
-    function logActivity() {}
+    /* ----- Counters (launch pre-sale dates) — Supabase-backed ----- */
+    var _counters = {};
+    function refreshCounters(){
+      if(!_db) return Promise.resolve(_counters);
+      return _db.from('counters').select('key,doc')
+        .then(function(res){ if(res && !res.error && res.data){ var m={}; res.data.forEach(function(r){ m[r.key]=Object.assign({}, r.doc||{}); }); _counters=m; repaint(); } return _counters; })
+        .catch(function(){ return _counters; });
+    }
+    function getCounters(){ return Object.assign({}, _counters); }
+    function setCounter(key, patch){
+      if(!_db || !key) return Promise.resolve();
+      var next = Object.assign({}, _counters[key]||{}, patch||{});
+      return _db.from('counters').upsert({ key:key, doc:next }).then(function(){ return refreshCounters(); }).catch(function(){ return refreshCounters(); });
+    }
+
+    /* ----- Audit log — read audit_events; logActivity() writes ----- */
+    var _audit = [];
+    function mapAuditRow(r){
+      var label = r.target || (r.detail && (r.detail.label || r.detail.detail)) || '';
+      return { type: r.event_type, label: label, ts: r.created_at, userName: r.actor_email || '', system: true };
+    }
+    function refreshAudit(){
+      if(!_db) return Promise.resolve(_audit);
+      return _db.from('audit_events').select('*').order('created_at',{ascending:false}).limit(500)
+        .then(function(res){ if(res && !res.error && res.data){ _audit=res.data.map(mapAuditRow); repaint(); } return _audit; })
+        .catch(function(){ return _audit; });
+    }
+    function auditEvents(){ return _audit.slice(); }
+    function logActivity(type, detail){
+      if(!_db || !type) return;
+      var a = (typeof account === 'function') ? account() : null;
+      var row = { event_type: type, target: (detail!=null ? String(detail) : null) };
+      if(a && a.id){ row.actor = a.id; row.actor_email = a.email || null; }
+      _db.from('audit_events').insert(row).then(function(){ refreshAudit(); }).catch(function(){});
+    }
     function map() {}
 
     /* ----- extend the live MinervaVIP (only where it doesn't already define) ----- */
