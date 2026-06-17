@@ -367,7 +367,12 @@
     // Minerva Concierge — role-gated AI help. The function resolves the caller's
     // role server-side and only feeds the model what that role may see.
     function askConcierge(question) {
-      return callFn('concierge', { question: question }, true).then(function (r) { return (r && r.answer) || ''; });
+      // Pass the effective (possibly impersonated) account id so the concierge can
+      // answer as that user. The edge function only honours it when the REAL JWT is
+      // the super-admin, and it can only narrow scope — so it can never escalate.
+      var viewAs = null;
+      try { var a = (typeof V.account === 'function') ? V.account() : null; if (a && a.id) viewAs = a.id; } catch (e) {}
+      return callFn('concierge', { question: question, viewAsUserId: viewAs }, true).then(function (r) { return (r && r.answer) || ''; });
     }
 
     var _profile = null;       // { id, name, email, is_admin, tier, status, membership_end }
